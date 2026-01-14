@@ -1,0 +1,140 @@
+import { start } from 'workflow/api';
+import { NextResponse } from 'next/server';
+import { seoAnalysisWorkflow } from './workflow';
+import { saveReport } from '@/lib/db';
+import { COST_CONFIG } from '@/lib/config';
+import {
+  createPaymentRequirements,
+  verifyPayment,
+  settlePayment,
+  create402Response,
+  createPaymentResponseHeader,
+} from '@/lib/payment-verification';
+// Using x402 v2 with CDP facilitator
+
+// Increase timeout for workflow execution (max 300s on Hobby/Pro)
+export const maxDuration = 300;
+
+export async function POST(request: Request) {
+  try {
+    // 0. PAYMENT VERIFICATION (BEFORE EVERYTHING ELSE)
+    // v2 uses 'PAYMENT-SIGNATURE' header instead of 'X-PAYMENT'
+    const paymentHeader = request.headers.get('PAYMENT-SIGNATURE');
+    const requestUrl = `${new URL(request.url).origin}${new URL(request.url).pathname}`;
+
+    const paymentRequirements = createPaymentRequirements(
+      `$${COST_CONFIG.seoAnalysis}`,  // Price in USDC
+      'base',                          // Base mainnet
+      requestUrl,                      // Resource URL
+      'SEO Gap Analysis with AI-powered insights'
+    );
+
+    // Verify payment
+    const verificationResult = await verifyPayment(paymentHeader, paymentRequirements);
+
+    if (!verificationResult.isValid) {
+      console.log('[API] Payment required - returning 402');
+      return NextResponse.json(
+        create402Response(paymentRequirements, verificationResult.error, verificationResult.payer),
+        { status: 402 }
+      );
+    }
+
+    console.log('[API] ✓ Payment verified from:', verificationResult.payer);
+
+    // Settle payment asynchronously (don't block request)
+    settlePayment(paymentHeader!, paymentRequirements).then(result => {
+      if (result.success) {
+        console.log('[API] ✓ Payment settled:', result.txHash);
+      } else {
+        console.error('[API] ✗ Payment settlement failed:', result.error);
+      }
+    });
+
+    // 1. CONTENT-TYPE VALIDATION
+    const contentType = request.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      return NextResponse.json(
+        { error: 'Content-Type must be application/json' },
+        { status: 415 }
+      );
+    }
+
+    const body = await request.json();
+    const { url, userId } = body;
+
+    // 2. INPUT VALIDATION
+    if (!url || typeof url !== 'string' || url.length < 5 || url.length > 500) {
+      return NextResponse.json(
+        { error: 'Invalid URL' },
+        { status: 400 }
+      );
+    }
+
+    if (!userId || typeof userId !== 'string') {
+      return NextResponse.json(
+        { error: 'User ID required' },
+        { status: 400 }
+      );
+    }
+
+    // 3. SANITIZATION (XSS prevention)
+    const sanitizedUrl = url.replace(/<[^>]*>/g, '').trim();
+
+    if (!sanitizedUrl) {
+      return NextResponse.json(
+        { error: 'Invalid input after sanitization' },
+        { status: 400 }
+      );
+    }
+
+    // 4. URL FORMAT VALIDATION
+    try {
+      new URL(sanitizedUrl);
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid URL format' },
+        { status: 400 }
+      );
+    }
+
+    // 5. CREATE INITIAL REPORT IN DATABASE
+    console.log('[API] Creating initial report for:', sanitizedUrl);
+    const runId = `seo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    await saveReport({
+      runId,
+      userId,
+      userUrl: sanitizedUrl,
+      createdAt: new Date(),
+      status: 'analyzing',
+    });
+
+    // 6. START WORKFLOW (with sanitized inputs)
+    console.log('[API] Starting SEO analysis workflow');
+    const run = await start(seoAnalysisWorkflow, [{
+      runId,
+      url: sanitizedUrl,
+    }]);
+
+    console.log('[API] ✓ Workflow started:', run.runId);
+
+    // 7. RETURN SUCCESS
+    // Note: PAYMENT-RESPONSE header is omitted because settlement is async
+    // Client can check settlement status separately if needed
+    return NextResponse.json({
+      success: true,
+      runId: run.runId,
+      message: 'SEO analysis started',
+    });
+  } catch (error) {
+    console.error('[API] Workflow start error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
+  }
+}

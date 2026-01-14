@@ -9,9 +9,30 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.10",
+    "@coinbase/cdp-core": "^0.0.75",
+    "@coinbase/cdp-hooks": "^0.0.75",
+    "@coinbase/cdp-react": "^0.0.75",
+    "@coinbase/x402": "^2.1.0",
+    "@vercel/analytics": "^1.6.1",
+    "@vercel/blob": "^2.0.0",
+    "@x402/core": "^2.2.0",
+    "@x402/evm": "^2.2.0",
+    "@x402/fetch": "^2.2.0",
+    "ai": "^6.0.34",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.26.2",
+    "lucide-react": "^0.562.0",
+    "mongodb": "^7.0.0",
     "next": "16.1.1",
+    "openai": "^6.16.0",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "tailwind-merge": "^3.4.0",
+    "viem": "^2.41.2",
+    "workflow": "^4.0.1-beta.7",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
