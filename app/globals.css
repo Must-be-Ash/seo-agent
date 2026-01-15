@@ -40,3 +40,42 @@ html {
     background-position: 200% center;
   }
 }
+
+/* Print styles for PDF export */
+@media print {
+  /* Hide navigation elements */
+  nav,
+  header,
+  [role="navigation"],
+  .no-print {
+    display: none !important;
+  }
+
+  /* Ensure proper page breaks */
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+
+  /* Avoid breaking inside these elements */
+  .report-section,
+  .gap-card,
+  .recommendation-card,
+  .metric-card {
+    page-break-inside: avoid;
+  }
+
+  /* White background for print */
+  body {
+    background: white !important;
+  }
+
+  /* Ensure text is black */
+  * {
+    color: black !important;
+  }
+
+  /* Remove shadows and borders that don't print well */
+  * {
+    box-shadow: none !important;
+  }
+}

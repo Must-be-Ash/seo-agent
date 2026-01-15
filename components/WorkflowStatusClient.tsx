@@ -238,7 +238,7 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
       <div className="min-h-screen" style={{ backgroundColor: '#222222' }}>
         <div className="max-w-6xl mx-auto px-6 py-12">
           {/* Success header - minimal and elegant */}
-          <div className="mb-12">
+          <div className="mb-12 no-print">
             <div className="flex items-center gap-4 mb-4">
               <div 
                 className="w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0"
