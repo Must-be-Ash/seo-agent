@@ -41,6 +41,19 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
   const [score, setScore] = useState<number | null>(null);
   const [userUrl, setUserUrl] = useState(initialData.userUrl);
 
+  // Fetch report on initial load if already completed
+  useEffect(() => {
+    if (status === 'completed' && !reportHtml) {
+      fetch(`/api/report/${runId}`)
+        .then(res => res.json())
+        .then(data => {
+          setReportHtml(data.reportHtml);
+          setScore(data.score);
+        })
+        .catch(err => console.error('Failed to fetch report:', err));
+    }
+  }, [runId, status, reportHtml]);
+
   // Poll for status updates every 1 second
   useEffect(() => {
     if (status === 'completed' || status === 'failed' || status === 'error') {
