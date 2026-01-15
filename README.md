@@ -1,37 +1,140 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SEO Gap Analysis Agent
+
+AI-powered SEO analysis tool that discovers keywords, analyzes competitors, and generates actionable recommendations. Built with Next.js, x402 payments, and Hyperbrowser.
+
+## Features
+
+- **Autonomous Keyword Discovery**: AI identifies target keywords from your website content
+- **Competitor Analysis**: Automatically fetches and analyzes top 10 ranking pages
+- **Gap Identification**: Compares your site against competitors to find SEO opportunities
+- **Actionable Reports**: Generates comprehensive HTML reports with prioritized recommendations
+- **x402 Payments**: Pay-per-use model with USDC on Base network
+
+## Payment Architecture
+
+### User → SEO Agent (Base Only)
+Users pay **$0.50 USDC on Base mainnet** to generate an SEO report.
+
+**Accepted Payment:**
+- Network: `eip155:8453` (Base mainnet)
+- Asset: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` (USDC)
+
+### SEO Agent → Hyperbrowser (Base Only)
+Backend pays Hyperbrowser for web scraping using **Base USDC**.
+
+**Hyperbrowser Endpoints Accept:**
+- **Base mainnet** (eip155:8453): USDC `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` - **Used by this app**
+- **Solana mainnet** (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp): USDC `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` - *Not used*
+
+> Note: While Hyperbrowser accepts both Base and Solana, this app uses Base only for both user payments and Hyperbrowser API calls.
+
+## Tech Stack
+
+- **Next.js 16**: React framework with Turbopack
+- **Vercel Workflow Kit**: Durable, multi-step workflow execution
+- **x402 v2**: HTTP 402 payment protocol with CDP facilitator
+- **Hyperbrowser**: Web scraping with x402 payments
+- **OpenAI**: GPT-4o-mini for keyword discovery and analysis
+- **Coinbase CDP**: Embedded wallet for user payments
+
+## Environment Variables
+
+Create a `.env.local` file with:
+
+```bash
+# x402 Payment Configuration
+USDC_RECEIVING_WALLET_ADDRESS=0x...  # Your wallet to receive user payments
+X402_WALLET_PRIVATE_KEY=0x...         # Backend wallet private key for Hyperbrowser payments
+
+# OpenAI API
+OPENAI_API_KEY=sk-...
+
+# Database (if using)
+# Add your database connection string here
+```
 
 ## Getting Started
 
-First, run the development server:
-
+1. **Install dependencies:**
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. **Set up environment variables:**
+```bash
+cp .env.example .env.local
+# Edit .env.local with your keys
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. **Run development server:**
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open [http://localhost:3000](http://localhost:3000) to see the app.
 
-## Learn More
+4. **Build for production:**
+```bash
+npm run build
+npm start
+```
 
-To learn more about Next.js, take a look at the following resources:
+## How It Works
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **User submits URL**: Enter a website URL to analyze
+2. **Payment**: User pays $0.50 USDC on Base via embedded wallet
+3. **Workflow starts**: Vercel Workflow Kit executes 8-step analysis:
+   - Fetch user's site (via Hyperbrowser)
+   - Discover keywords (via OpenAI)
+   - Search for competitors (via Hyperbrowser)
+   - Fetch competitor data (via Hyperbrowser)
+   - Analyze patterns (via OpenAI)
+   - Identify gaps (via OpenAI)
+   - Generate recommendations (via OpenAI)
+   - Create HTML report (via OpenAI)
+4. **Report ready**: View comprehensive SEO analysis with actionable insights
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+```
+seo-agent/
+├── app/
+│   ├── page.tsx                    # Landing page with URL input
+│   ├── report/[runId]/page.tsx     # Report viewing page
+│   └── api/
+│       ├── workflows/
+│       │   └── seo-analysis/
+│       │       ├── route.ts        # Workflow API endpoint (x402 protected)
+│       │       ├── workflow.ts     # Workflow definition
+│       │       └── steps.ts        # Individual workflow steps
+│       └── report/[runId]/
+│           └── status/route.ts     # Report status polling
+├── lib/
+│   ├── payment-verification.ts     # x402 v2 server-side payment handling
+│   ├── hyperbrowser.ts            # Hyperbrowser API client
+│   ├── schemas.ts                 # Zod schemas for data extraction
+│   └── config.ts                  # App configuration
+└── components/
+    └── Header.tsx                 # App header with wallet
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## x402 v2 Migration Notes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# seo-agent
+This project uses **x402 v2** packages:
+- `@x402/core` - Core x402 protocol types and utilities
+- `@x402/evm` - EVM (Base) payment scheme
+- `@x402/fetch` - Fetch wrapper with automatic payment handling
+- `@coinbase/x402` - CDP facilitator configuration
+
+See `bug.md` for full migration details from v1 to v2.
+
+## Resources
+
+- [x402 Protocol Docs](https://x402.gitbook.io/x402)
+- [Hyperbrowser Docs](https://hyperbrowser.ai/docs)
+- [Vercel Workflow Kit](https://vercel.com/docs/workflow)
+- [Coinbase CDP](https://docs.cdp.coinbase.com/)
+
+## License
+
+MIT
