@@ -26,7 +26,7 @@ export default async function ReportPage({ params }: ReportPageProps) {
   if (report.patterns) progress += 10;
   if (report.gaps) progress += 10;
   if (report.recommendations) progress += 10;
-  if (report.reportHtml) progress += 10;
+  if (report.reportData || report.reportHtml) progress += 10;
 
   if (report.status === 'completed') {
     progress = 100;
@@ -43,7 +43,7 @@ export default async function ReportPage({ params }: ReportPageProps) {
       patterns: !!report.patterns,
       gaps: !!report.gaps,
       recommendations: !!report.recommendations,
-      reportHtml: !!report.reportHtml,
+      reportHtml: !!(report.reportData || report.reportHtml),
     },
   };
 

@@ -5,7 +5,7 @@ import { x402Client, wrapFetchWithPayment } from '@x402/fetch';
 import { registerExactEvmScheme } from '@x402/evm/exact/client';
 import { privateKeyToAccount } from 'viem/accounts';
 import OpenAI from 'openai';
-import { REPORT_STYLES } from '@/lib/report-styles';
+import type { StructuredReportData } from '@/types/report-data';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -364,21 +364,34 @@ export async function generateRecommendations(
   const lowPriority = gaps.filter(g => g.severity === 'low').map(g => g.recommendation);
 
   // Generate content outline with OpenAI
+  const primaryKeyword = userSite.title || 'the topic';
   const prompt = `Based on these SEO gaps, create a detailed content outline for improving the page:
 
+PRIMARY KEYWORD: ${primaryKeyword}
 CURRENT H2 SECTIONS:
-${userSite.h2.join('\n')}
+${userSite.h2.length > 0 ? userSite.h2.join('\n') : 'None'}
 
 GAPS TO ADDRESS:
 ${gaps.map(g => `- ${g.finding}`).join('\n')}
 
 Create a comprehensive content outline with:
-- Recommended H1 (improved)
-- 8-12 H2 sections (including new ones to add)
-- Brief description for each section (what to cover)
-- Estimated word count per section
+- Recommended H1 (use the primary keyword "${primaryKeyword}" naturally, not placeholders)
+- 8-12 H2 sections (numbered format: "### 1. Section Title")
+- For each section, include: title, estimated word count in parentheses like "(Estimated Word Count: 200)", and a brief description
+- Use the actual keyword "${primaryKeyword}" throughout, NOT placeholders like [Topic]
 
-Format as markdown outline.`;
+Format as markdown with this exact structure:
+## Recommended H1
+**"Your H1 here using the keyword"**
+
+## H2 Sections
+### 1. Section Title (Estimated Word Count: 200)
+Brief description of what to cover in this section.
+
+### 2. Next Section Title (Estimated Word Count: 250)
+Brief description...
+
+Include a "Total Estimated Word Count" at the end.`;
 
   const response = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
@@ -408,96 +421,275 @@ Format as markdown outline.`;
 }
 
 /**
- * Step 8: Generate HTML Report
- * Creates a comprehensive HTML report with all findings
+ * Step 8: Generate Structured Report Data
+ * Creates structured JSON data for the report (no HTML generation)
  */
-export async function generateReportHtml(
+export async function generateReportData(
   reportData: any
-): Promise<string> {
-  console.log('[Step 8] Generating HTML report');
+): Promise<StructuredReportData> {
+  console.log('[Step 8] Generating structured report data');
 
-  const prompt = `Create a professional, comprehensive SEO Gap Analysis report in HTML.
+  // Extract key findings from gaps
+  const keyFindings = reportData.gaps
+    .slice(0, 5)
+    .map((gap: any) => gap.finding);
 
-DATA:
-${JSON.stringify({
-  userSite: {
-    title: reportData.userSiteData.title,
-    wordCount: reportData.userSiteData.wordCount,
-    h2Count: reportData.userSiteData.h2.length,
-  },
-  keywords: reportData.discoveredKeywords,
-  patterns: reportData.patterns,
-  gaps: reportData.gaps,
-  recommendations: reportData.recommendations,
-  score: reportData.score,
-}, null, 2)}
+  // Generate executive summary overview
+  const highGaps = reportData.gaps.filter((g: any) => g.severity === 'high');
+  const mediumGaps = reportData.gaps.filter((g: any) => g.severity === 'medium');
+  const mainGapCategories = [...new Set(highGaps.map((g: any) => g.category))].slice(0, 3);
+  
+  const overviewPrompt = `Create a concise, professional executive summary (2-3 sentences) for this SEO gap analysis report:
 
-Create a beautiful, modern HTML report with:
-- Clean, professional design (use semantic HTML)
-- Executive summary section with key findings
-- Your current SEO profile section with metrics
-- Competitor benchmark comparison with data visualization
-- Gap analysis with severity indicators using CSS classes:
-  * .gap-item.gap-high (for high severity)
-  * .gap-item.gap-medium (for medium severity)
-  * .gap-item.gap-low (for low severity)
-- Prioritized recommendations in sections:
-  * .recommendation-section.priority-high
-  * .recommendation-section.priority-medium
-  * .recommendation-section.priority-low
-- Content outline
-- Overall SEO score with appropriate class:
-  * .score-badge.score-high (80-100)
-  * .score-badge.score-medium (60-79)
-  * .score-badge.score-low (0-59)
+Website: ${reportData.userSiteData.title || reportData.userSiteData.url || 'The analyzed website'}
+SEO Score: ${reportData.score}/100
+Primary Keyword: "${reportData.discoveredKeywords.primary}"
+Key Issues Found: ${highGaps.length} high-priority gaps, ${mediumGaps.length} medium-priority gaps
+Main Gap Categories: ${mainGapCategories.join(', ')}
 
-Use semantic HTML with proper CSS classes that match our styling.
-Do NOT include <style> tags - styles will be injected separately.
-Return ONLY the HTML content (no markdown code blocks, no DOCTYPE, no <html> wrapper).
-Start directly with content that goes in <body>.`;
+Write a summary that:
+- Mentions the SEO score and what it indicates
+- Highlights the most critical gap (${highGaps[0]?.category || 'content quality'})
+- Sets expectations for what the report covers
 
-  const response = await openai.chat.completions.create({
+Return only the summary text, no markdown, no formatting, no quotes.`;
+
+  const overviewResponse = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
       {
         role: 'system',
-        content: 'You are an expert at creating HTML reports. Return only HTML body content, no code blocks, no explanations, no <html> or <head> tags.'
+        content: 'You are an SEO consultant. Write concise, professional summaries.'
       },
       {
         role: 'user',
-        content: prompt
+        content: overviewPrompt
       }
     ],
-    temperature: 0.7,
+    temperature: 0.5,
+    max_tokens: 150,
   });
 
-  let html = response.choices[0].message.content || '';
+  const overview = overviewResponse.choices[0].message.content || '';
 
-  // Clean up any markdown code blocks if present
-  html = html.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
+  // Parse content outline from markdown
+  const parseContentOutline = (outlineText: string) => {
+    const lines = outlineText.split('\n').filter(l => l.trim());
+    let recommendedH1 = '';
+    const h2Sections: Array<{ title: string; estimatedWordCount: number; description: string }> = [];
+    let totalWordCount = 0;
+    let currentSection: { title: string; estimatedWordCount: number; description: string } | null = null;
 
-  // Inject our comprehensive styles into the HTML
-  // If HTML has a <head> tag, inject there; otherwise wrap it
-  if (html.includes('<head>')) {
-    html = html.replace('</head>', `${REPORT_STYLES}</head>`);
-  } else if (html.includes('<html>')) {
-    html = html.replace('<html>', `<html><head>${REPORT_STYLES}</head>`);
+    for (const line of lines) {
+      const trimmed = line.trim();
+      
+      // Extract H1 (usually starts with # or "Recommended H1:")
+      // Handle format: "## Recommended H1" followed by "**\"H1 text\"**"
+      if (trimmed.toLowerCase().includes('recommended h1')) {
+        // Look ahead for the next line which should have the H1 in quotes
+        const nextLineIndex = lines.indexOf(trimmed) + 1;
+        if (nextLineIndex < lines.length) {
+          const nextLine = lines[nextLineIndex].trim();
+          // Extract from format: **"H1 text"** or "H1 text"
+          const h1Match = nextLine.match(/\*\*["'](.+?)["']\*\*|["'](.+?)["']|(.+)/);
+          if (h1Match) {
+            recommendedH1 = (h1Match[1] || h1Match[2] || h1Match[3] || '').trim();
+            if (recommendedH1) continue;
+          }
+        }
+      } else if (trimmed.startsWith('#') && !trimmed.startsWith('##')) {
+        // Single # is H1
+        recommendedH1 = trimmed.replace(/^#+\s*/, '').trim();
+        // Remove markdown formatting
+        recommendedH1 = recommendedH1.replace(/\*\*["'](.+?)["']\*\*|["'](.+?)["']/, '$1$2');
+        if (recommendedH1) continue;
+      } else if (trimmed.match(/^\*\*["'].+?["']\*\*|^["'].+?["']$/)) {
+        // Standalone H1 in quotes
+        const h1Match = trimmed.match(/["'](.+?)["']/);
+        if (h1Match && !recommendedH1) {
+          recommendedH1 = h1Match[1].trim();
+          continue;
+        }
+      }
+
+      // Extract H2 sections (usually start with ## or - or numbered)
+      // Handle format: "### 1. Section Title (Estimated Word Count: 200)"
+      if (trimmed.startsWith('##') || trimmed.match(/^[-*]\s+/) || trimmed.match(/^\d+\.\s+/) || trimmed.match(/^###\s+\d+\./)) {
+        // Save previous section if exists
+        if (currentSection) {
+          h2Sections.push(currentSection);
+          totalWordCount += currentSection.estimatedWordCount;
+        }
+
+        // Parse new section - handle multiple formats
+        // Format 1: "### 1. Title (Estimated Word Count: 200)"
+        // Format 2: "## Title (200 words)"
+        // Format 3: "- Title (~200 words)"
+        let match = trimmed.match(/(?:###\s+\d+\.\s*|##\s*|[-*]\s*|\d+\.\s*)(.+?)(?:\s*\([^)]*[Ee]stimated\s+[Ww]ord\s+[Cc]ount[:\s]*(\d+)[^)]*\)|\(~?(\d+)\s*words?\))/i);
+        if (!match) {
+          // Try simpler format
+          match = trimmed.match(/(?:###\s+\d+\.\s*|##\s*|[-*]\s*|\d+\.\s*)(.+?)(?:\s*\(~?(\d+)\s*words?\))?/i);
+        }
+        
+        if (match) {
+          const title = match[1].trim();
+          // Word count could be in match[2] or match[3] depending on format
+          const wordCount = match[2] ? parseInt(match[2]) : (match[3] ? parseInt(match[3]) : 200);
+          currentSection = {
+            title,
+            estimatedWordCount: wordCount,
+            description: '',
+          };
+        }
+      } else if (currentSection && trimmed.length > 0 && !trimmed.startsWith('#') && !trimmed.match(/^Total\s+Estimated/i)) {
+        // This is a description line for the current section
+        // Skip lines that are just separators or total word count
+        if (trimmed !== '---' && !trimmed.match(/^Total\s+Estimated/i)) {
+          if (currentSection.description) {
+            currentSection.description += ' ' + trimmed;
+          } else {
+            currentSection.description = trimmed;
+          }
+        }
+      } else if (trimmed.match(/^Total\s+Estimated\s+Word\s+Count[:\s]*(\d+)/i)) {
+        // Extract total from summary line if provided
+        const totalMatch = trimmed.match(/(\d+)/);
+        if (totalMatch && totalWordCount === 0) {
+          totalWordCount = parseInt(totalMatch[1]);
+        }
+      }
+    }
+
+    // Don't forget the last section
+    if (currentSection) {
+      h2Sections.push(currentSection);
+      totalWordCount += currentSection.estimatedWordCount;
+    }
+
+    // If we didn't find H1, try to extract from first line
+    if (!recommendedH1 && lines.length > 0) {
+      const firstLine = lines[0].trim();
+      if (firstLine.startsWith('#')) {
+        recommendedH1 = firstLine.replace(/^#+\s*/, '').trim();
+      } else if (!firstLine.startsWith('##') && !firstLine.match(/^[-*]\s+/) && !firstLine.match(/^\d+\.\s+/)) {
+        recommendedH1 = firstLine;
+      }
+    }
+
+    // If no word count found, estimate based on sections
+    if (totalWordCount === 0 && h2Sections.length > 0) {
+      totalWordCount = h2Sections.length * 200;
+      h2Sections.forEach(s => s.estimatedWordCount = 200);
+    }
+
+    return {
+      recommendedH1: recommendedH1 || 'Comprehensive Guide',
+      h2Sections,
+      totalEstimatedWordCount: totalWordCount || 2000,
+    };
+  };
+
+  const contentOutline = parseContentOutline(reportData.recommendations.contentOutline || '');
+
+  // Structure recommendations by priority
+  // Map recommendations to their corresponding gaps for better structure
+  const structureRecommendations = (recommendations: string[], priority: 'high' | 'medium' | 'low', gaps: Array<any>) => {
+    return recommendations.map((rec, index) => {
+      const trimmed = rec.trim();
+      
+      // Try to find the corresponding gap for this recommendation
+      const correspondingGap = gaps.find((g: any) => 
+        g.severity === priority && 
+        (g.recommendation === trimmed || g.recommendation.includes(trimmed.substring(0, 50)))
+      );
+
+      let title = trimmed;
+      let description = '';
+      let actionItems: string[] = [];
+
+      // If we found a corresponding gap, use its data for better structure
+      if (correspondingGap) {
+        title = correspondingGap.category || trimmed.substring(0, 60);
+        description = correspondingGap.impact || '';
+        actionItems = [correspondingGap.recommendation || trimmed];
+      } else {
+        // Try to extract title and description from the recommendation text
+        // Many recommendations start with action verbs like "Add", "Incorporate", "Expand"
+        const actionMatch = trimmed.match(/^(Add|Incorporate|Expand|Consider|Implement|Create|Build|Develop|Improve|Enhance|Optimize|Update|Fix|Remove|Replace)\s+(.+)/i);
+        if (actionMatch) {
+          title = actionMatch[1] + ' ' + actionMatch[2].split(/[.,]/)[0].trim();
+          description = trimmed;
+          actionItems = [trimmed];
+        } else if (trimmed.includes(':')) {
+          // Check if it has a colon separator (title: description)
+          const parts = trimmed.split(':');
+          title = parts[0].trim();
+          description = parts.slice(1).join(':').trim();
+          actionItems = [description || trimmed];
+        } else {
+          // Use first part as title, rest as description
+          const firstSentence = trimmed.split(/[.!?]/)[0];
+          if (firstSentence.length < 80) {
+            title = firstSentence;
+            description = trimmed.substring(firstSentence.length).trim();
   } else {
-    // Wrap in full HTML document
-    html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SEO Gap Analysis Report</title>
-  ${REPORT_STYLES}
-</head>
-<body>
-  ${html}
-</body>
-</html>`;
-  }
+            title = trimmed.substring(0, 60) + '...';
+            description = trimmed;
+          }
+          actionItems = [trimmed];
+        }
+      }
 
-  console.log('[Step 8] ✓ Generated HTML report with styles');
-  return html;
+      // Clean up title (remove trailing periods, etc.)
+      title = title.replace(/^[A-Z]\w+\s+/, ''); // Remove leading action verb if it makes title too generic
+      if (title.length > 80) {
+        title = title.substring(0, 77) + '...';
+      }
+
+      return {
+        title: title || 'SEO Recommendation',
+        description: description || trimmed,
+        actionItems: actionItems.length > 0 ? actionItems : [trimmed],
+      };
+    });
+  };
+
+  const structuredData: StructuredReportData = {
+    executiveSummary: {
+      overview,
+      keyFindings,
+      score: reportData.score,
+    },
+    yourMetrics: {
+      wordCount: reportData.userSiteData.wordCount,
+      h2Count: reportData.userSiteData.h2.length,
+      h3Count: reportData.userSiteData.h3.length,
+      internalLinks: reportData.userSiteData.internalLinks,
+      externalLinks: reportData.userSiteData.externalLinks,
+      hasSchema: reportData.userSiteData.hasSchema,
+    },
+    competitorBenchmarks: {
+      avgWordCount: reportData.patterns.avgWordCount,
+      avgH2Count: reportData.patterns.avgH2Count,
+      avgH3Count: reportData.patterns.avgH3Count,
+      avgInternalLinks: reportData.patterns.avgInternalLinks,
+      avgExternalLinks: reportData.patterns.avgExternalLinks,
+      schemaUsage: reportData.patterns.technicalPatterns.schemaUsage,
+      totalCompetitors: reportData.patterns.technicalPatterns.totalCompetitors,
+    },
+    gaps: reportData.gaps,
+    recommendations: {
+      highPriority: structureRecommendations(reportData.recommendations.highPriority || [], 'high', reportData.gaps),
+      mediumPriority: structureRecommendations(reportData.recommendations.mediumPriority || [], 'medium', reportData.gaps),
+      lowPriority: structureRecommendations(reportData.recommendations.lowPriority || [], 'low', reportData.gaps),
+    },
+    contentOutline,
+    keywords: {
+      primary: reportData.discoveredKeywords.primary,
+      secondary: reportData.discoveredKeywords.secondary || [],
+    },
+  };
+
+  console.log('[Step 8] ✓ Generated structured report data');
+  return structuredData;
 }

@@ -77,8 +77,9 @@ export interface SEOReport {
     contentOutline: string;
   };
 
-  // Step 8: Generated HTML report
-  reportHtml?: string;
+  // Step 8: Generated structured report data (replaces HTML)
+  reportData?: any; // StructuredReportData from @/types/report-data
+  reportHtml?: string; // Deprecated - kept for backward compatibility
 
   // Overall score
   score?: number; // 0-100

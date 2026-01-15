@@ -130,7 +130,7 @@ async function calculateScoreStep(
   return score;
 }
 
-async function generateReportHtmlStep(
+async function generateReportDataStep(
   reportData: {
     runId: string;
     userSiteData: SEOData;
@@ -143,13 +143,13 @@ async function generateReportHtmlStep(
 ) {
   "use step";
 
-  console.log('[Workflow] Step 9: Generating HTML report');
-  const reportHtml = await steps.generateReportHtml(reportData);
+  console.log('[Workflow] Step 9: Generating structured report data');
+  const reportDataJson = await steps.generateReportData(reportData);
 
-  // Save HTML to database
-  await updateReport(reportData.runId, { reportHtml });
+  // Save structured data to database
+  await updateReport(reportData.runId, { reportData: reportDataJson });
 
-  return reportHtml;
+  return reportDataJson;
 }
 
 async function finalizeStep(runId: string) {
@@ -200,8 +200,8 @@ export const seoAnalysisWorkflow = async (input: { url: string; runId: string })
   // Step 8: Calculate overall score
   const score = await calculateScoreStep(userSiteData, patterns, gaps, runId);
 
-  // Step 9: Generate HTML report
-  const reportHtml = await generateReportHtmlStep({
+  // Step 9: Generate structured report data
+  const reportData = await generateReportDataStep({
     runId,
     userSiteData,
     discoveredKeywords,
@@ -217,7 +217,7 @@ export const seoAnalysisWorkflow = async (input: { url: string; runId: string })
   return {
     success: true,
     runId,
-    reportHtml,
+    reportData,
     score,
   };
 };

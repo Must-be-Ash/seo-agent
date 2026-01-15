@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { WorkflowProgressBar } from './WorkflowProgressBar';
 import { WorkflowStepTimeline } from './WorkflowStepTimeline';
+import { SEOReport } from './report/SEOReport';
 import { CheckCircle2, XCircle } from 'lucide-react';
+import type { StructuredReportData } from '@/types/report-data';
 
 interface StepUpdate {
   stepId: string;
@@ -37,22 +39,27 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
     { stepId: 'generate-recommendations', stepLabel: 'Generating recommendations', status: initialData.completedSteps.recommendations ? 'success' : 'pending', timestamp: Date.now() },
     { stepId: 'generate-report', stepLabel: 'Creating your report', status: initialData.completedSteps.reportHtml ? 'success' : 'pending', timestamp: Date.now() },
   ]);
-  const [reportHtml, setReportHtml] = useState<string | null>(null);
+  const [reportData, setReportData] = useState<StructuredReportData | null>(null);
+  const [reportHtml, setReportHtml] = useState<string | null>(null); // Fallback for old reports
   const [score, setScore] = useState<number | null>(null);
   const [userUrl, setUserUrl] = useState(initialData.userUrl);
 
   // Fetch report on initial load if already completed
   useEffect(() => {
-    if (status === 'completed' && !reportHtml) {
+    if (status === 'completed' && !reportData && !reportHtml) {
       fetch(`/api/report/${runId}`)
         .then(res => res.json())
         .then(data => {
-          setReportHtml(data.reportHtml);
+          if (data.reportData) {
+            setReportData(data.reportData);
+          } else if (data.reportHtml) {
+            setReportHtml(data.reportHtml);
+          }
           setScore(data.score);
         })
         .catch(err => console.error('Failed to fetch report:', err));
     }
-  }, [runId, status, reportHtml]);
+  }, [runId, status, reportData, reportHtml]);
 
   // Poll for status updates every 1 second
   useEffect(() => {
@@ -99,11 +106,15 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
           return step;
         }));
 
-        // Fetch report HTML when completed
+        // Fetch report data when completed
         if (data.status === 'completed') {
           const reportResponse = await fetch(`/api/report/${runId}`);
-          const reportData = await reportResponse.json();
-          setReportHtml(reportData.reportHtml);
+          const reportResponseData = await reportResponse.json();
+          if (reportResponseData.reportData) {
+            setReportData(reportResponseData.reportData);
+          } else if (reportResponseData.reportHtml) {
+            setReportHtml(reportResponseData.reportHtml);
+          }
         }
       } catch (error) {
         console.error('Failed to poll status:', error);
@@ -149,7 +160,7 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
   }
 
   // Success state - show completed report
-  if (status === 'completed' && reportHtml) {
+  if (status === 'completed' && (reportData || reportHtml)) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-white to-slate-50">
         <div className="max-w-6xl mx-auto px-6 py-16">
@@ -164,13 +175,6 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
                 <p className="text-slate-600">Your SEO gap analysis is ready</p>
               </div>
             </div>
-
-            {score !== null && (
-              <div className="mb-6 p-4 bg-slate-50 rounded-xl">
-                <p className="text-sm text-slate-600 mb-1">SEO Score</p>
-                <p className="text-4xl font-bold text-slate-900">{score}/100</p>
-              </div>
-            )}
 
             {/* Collapsible workflow steps */}
             <details className="mt-6">
@@ -193,9 +197,13 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
           </div>
 
           {/* Report content */}
-          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
-            <div dangerouslySetInnerHTML={{ __html: reportHtml }} />
-          </div>
+          {reportData ? (
+            <SEOReport data={reportData} />
+          ) : reportHtml ? (
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
+              <div dangerouslySetInnerHTML={{ __html: reportHtml }} />
+            </div>
+          ) : null}
         </div>
       </div>
     );

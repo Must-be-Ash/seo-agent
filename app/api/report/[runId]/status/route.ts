@@ -29,7 +29,7 @@ export async function GET(request: Request, { params }: RouteParams) {
     if (report.patterns) progress += 10;
     if (report.gaps) progress += 10;
     if (report.recommendations) progress += 10;
-    if (report.reportHtml) progress += 10;
+    if (report.reportData || report.reportHtml) progress += 10;
 
     if (report.status === 'completed') {
       progress = 100;
@@ -46,7 +46,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         patterns: !!report.patterns,
         gaps: !!report.gaps,
         recommendations: !!report.recommendations,
-        reportHtml: !!report.reportHtml,
+        reportHtml: !!(report.reportData || report.reportHtml),
       },
     });
   } catch (error) {

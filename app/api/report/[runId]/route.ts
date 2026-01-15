@@ -27,7 +27,8 @@ export async function GET(request: Request, { params }: RouteParams) {
       status: report.status,
       userUrl: report.userUrl,
       score: report.score,
-      reportHtml: report.reportHtml,
+      reportData: report.reportData,
+      reportHtml: report.reportHtml, // Deprecated, kept for backward compatibility
       createdAt: report.createdAt,
     });
   } catch (error) {
