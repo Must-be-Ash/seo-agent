@@ -35,13 +35,10 @@ export async function GET(request: Request, { params }: RouteParams) {
       progress = 100;
     }
 
-    // Return status
+    // Return status and progress information
     return NextResponse.json({
       status: report.status,
       progress,
-      userUrl: report.userUrl,
-      score: report.score,
-      createdAt: report.createdAt,
       completedSteps: {
         userSiteData: !!report.userSiteData,
         discoveredKeywords: !!report.discoveredKeywords,
@@ -53,9 +50,9 @@ export async function GET(request: Request, { params }: RouteParams) {
       },
     });
   } catch (error) {
-    console.error('Status check error:', error);
+    console.error('Status fetch error:', error);
     return NextResponse.json(
-      { error: 'Failed to check status' },
+      { error: 'Failed to fetch status' },
       { status: 500 }
     );
   }

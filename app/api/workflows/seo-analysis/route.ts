@@ -135,9 +135,10 @@ export async function POST(request: Request) {
     // 7. RETURN SUCCESS
     // Note: PAYMENT-RESPONSE header is omitted because settlement is async
     // Client can check settlement status separately if needed
+    // Return our custom runId (not run.runId) so client can access the report
     return NextResponse.json({
       success: true,
-      runId: run.runId,
+      runId: runId,  // Use our custom runId that matches database
       message: 'SEO analysis started',
     });
   } catch (error) {
