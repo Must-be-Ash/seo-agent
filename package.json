@@ -31,7 +31,7 @@
     "react-dom": "19.2.3",
     "tailwind-merge": "^3.4.0",
     "viem": "^2.41.2",
-    "workflow": "^4.0.1-beta.7",
+    "workflow": "^4.0.1-beta.46",
     "zod": "^4.3.5"
   },
   "devDependencies": {

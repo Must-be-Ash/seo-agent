@@ -171,7 +171,7 @@ async function finalizeStep(runId: string) {
 // MAIN WORKFLOW FUNCTION
 // ============================================================================
 
-export async function seoAnalysisWorkflow(input: { url: string; runId: string }) {
+export const seoAnalysisWorkflow = async (input: { url: string; runId: string }) => {
   "use workflow";
 
   const { url, runId } = input;
@@ -220,4 +220,4 @@ export async function seoAnalysisWorkflow(input: { url: string; runId: string })
     reportHtml,
     score,
   };
-}
+};
