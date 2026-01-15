@@ -4,32 +4,6 @@
 import * as steps from './steps';
 import type { SEOData } from '@/lib/schemas';
 
-// Helper function to update report via API
-async function updateReportViaAPI(runId: string, data: any) {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/report/${runId}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to update report: ${response.statusText}`);
-  }
-
-  return response.json();
-}
-
-// Helper function to get report via API
-async function getReportViaAPI(runId: string) {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/report/${runId}`);
-
-  if (!response.ok) {
-    throw new Error(`Failed to get report: ${response.statusText}`);
-  }
-
-  return response.json();
-}
-
 // ============================================================================
 // STEP FUNCTIONS
 // Each step is a separate function with 'use step' directive for retryability
@@ -38,11 +12,14 @@ async function getReportViaAPI(runId: string) {
 async function fetchUserSiteStep(url: string, runId: string) {
   "use step";
 
+  // Import MongoDB inside step function (step functions have full Node.js access)
+  const { updateReport } = await import('@/lib/db');
+
   console.log(`[Workflow] Step 1: Fetching user site - ${url}`);
   const userSiteData = await steps.fetchUserSite(url);
 
   // Save to database
-  await updateReportViaAPI(runId, { userSiteData });
+  await updateReport(runId, { userSiteData });
 
   return userSiteData;
 }
@@ -50,11 +27,13 @@ async function fetchUserSiteStep(url: string, runId: string) {
 async function discoverKeywordsStep(userSiteData: SEOData, runId: string) {
   "use step";
 
+  const { updateReport } = await import('@/lib/db');
+
   console.log('[Workflow] Step 2: Discovering keywords');
   const discoveredKeywords = await steps.discoverKeywords(userSiteData);
 
   // Save to database
-  await updateReportViaAPI(runId, { discoveredKeywords });
+  await updateReport(runId, { discoveredKeywords });
 
   return discoveredKeywords;
 }
@@ -75,11 +54,13 @@ async function fetchCompetitorDataStep(
 ) {
   "use step";
 
+  const { updateReport } = await import('@/lib/db');
+
   console.log('[Workflow] Step 4: Fetching competitor data');
   const competitorData = await steps.fetchCompetitorData(searchResults, primaryKeyword);
 
   // Save to database
-  await updateReportViaAPI(runId, { competitorData });
+  await updateReport(runId, { competitorData });
 
   return competitorData;
 }
@@ -87,11 +68,13 @@ async function fetchCompetitorDataStep(
 async function analyzePatternsStep(userSiteData: SEOData, competitorData: Array<any>, runId: string) {
   "use step";
 
+  const { updateReport } = await import('@/lib/db');
+
   console.log('[Workflow] Step 5: Analyzing patterns');
   const patterns = await steps.analyzePatterns(userSiteData, competitorData);
 
   // Save to database
-  await updateReportViaAPI(runId, { patterns });
+  await updateReport(runId, { patterns });
 
   return patterns;
 }
@@ -104,11 +87,13 @@ async function identifyGapsStep(
 ) {
   "use step";
 
+  const { updateReport } = await import('@/lib/db');
+
   console.log('[Workflow] Step 6: Identifying gaps');
   const gaps = await steps.identifyGaps(userSiteData, patterns, competitorData);
 
   // Save to database
-  await updateReportViaAPI(runId, { gaps });
+  await updateReport(runId, { gaps });
 
   return gaps;
 }
@@ -116,11 +101,13 @@ async function identifyGapsStep(
 async function generateRecommendationsStep(gaps: Array<any>, userSiteData: SEOData, runId: string) {
   "use step";
 
+  const { updateReport } = await import('@/lib/db');
+
   console.log('[Workflow] Step 7: Generating recommendations');
   const recommendations = await steps.generateRecommendations(gaps, userSiteData);
 
   // Save to database
-  await updateReportViaAPI(runId, { recommendations });
+  await updateReport(runId, { recommendations });
 
   return recommendations;
 }
@@ -132,6 +119,8 @@ async function calculateScoreStep(
   runId: string
 ) {
   "use step";
+
+  const { updateReport } = await import('@/lib/db');
 
   console.log('[Workflow] Step 8: Calculating overall SEO score');
 
@@ -150,7 +139,7 @@ async function calculateScoreStep(
   score = Math.max(0, Math.min(100, score));
 
   // Save score
-  await updateReportViaAPI(runId, { score });
+  await updateReport(runId, { score });
 
   return score;
 }
@@ -169,22 +158,38 @@ async function generateReportDataStep(
 ) {
   "use step";
 
+  const { updateReport } = await import('@/lib/db');
+
   console.log('[Workflow] Step 9: Generating structured report data');
   const reportDataJson = await steps.generateReportData(reportData);
 
   // Save structured data to database
-  await updateReportViaAPI(reportData.runId, { reportData: reportDataJson });
+  await updateReport(reportData.runId, { reportData: reportDataJson });
 
   return reportDataJson;
+}
+
+async function getReportStep(runId: string) {
+  "use step";
+
+  const { getReportByRunId } = await import('@/lib/db');
+
+  console.log('[Workflow] Fetching report from database');
+  const report = await getReportByRunId(runId);
+
+  // Only return the competitorData field to avoid MongoDB ObjectId serialization issues
+  return report?.competitorData || [];
 }
 
 async function finalizeStep(runId: string) {
   "use step";
 
+  const { updateReport } = await import('@/lib/db');
+
   console.log('[Workflow] Finalizing report');
 
   // Update status to completed
-  await updateReportViaAPI(runId, {
+  await updateReport(runId, {
     status: 'completed',
   });
 
@@ -228,7 +233,7 @@ export const seoAnalysisWorkflow = async (input: { url: string; runId: string })
 
   // Step 9: Generate structured report data
   // Fetch competitor data from database for the report
-  const report = await getReportViaAPI(runId);
+  const competitorDataFromDb = await getReportStep(runId);
   const reportData = await generateReportDataStep({
     runId,
     userSiteData,
@@ -237,7 +242,7 @@ export const seoAnalysisWorkflow = async (input: { url: string; runId: string })
     gaps,
     recommendations,
     score,
-    competitorData: report?.competitorData || [],
+    competitorData: competitorDataFromDb,
   });
 
   // Final step: Mark as completed

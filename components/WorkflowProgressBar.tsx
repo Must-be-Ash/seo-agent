@@ -22,13 +22,11 @@ export function WorkflowProgressBar({
       {/* Progress header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <Loader2 className="w-4 h-4 text-[#888888] animate-spin" />
-          </div>
-          <div>
+          <Loader2 className="w-4 h-4 text-[#888888] animate-spin flex-shrink-0" />
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span 
-                className="text-sm font-medium text-[#CCCCCC] animate-pulse"
+                className="text-sm font-medium text-[#CCCCCC]"
                 style={{
                   background: 'linear-gradient(90deg, #888888 0%, #CCCCCC 50%, #888888 100%)',
                   backgroundSize: '200% 100%',
@@ -41,11 +39,11 @@ export function WorkflowProgressBar({
               </span>
             </div>
             {subStep && (
-              <p className="text-xs text-[#666666] mt-1 ml-6">{subStep}</p>
+              <p className="text-xs text-[#666666] mt-1">{subStep}</p>
             )}
           </div>
         </div>
-        <div className="text-right">
+        <div className="text-right flex-shrink-0">
           <div className="text-sm font-semibold text-[#FFFFFF]">{Math.round(progress)}%</div>
           <div className="text-xs text-[#888888]">{completedSteps} of {totalSteps}</div>
         </div>
