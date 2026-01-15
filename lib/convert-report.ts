@@ -216,6 +216,13 @@ export function convertOldReportToStructured(report: SEOReport): StructuredRepor
       primary: report.discoveredKeywords.primary,
       secondary: report.discoveredKeywords.secondary || [],
     },
+    competitors: (report.competitorData || []).map((comp: any) => ({
+      rank: comp.rank || 0,
+      url: comp.url || '',
+      title: comp.title || comp.url || 'Unknown',
+      wordCount: comp.wordCount || 0,
+      h2Count: comp.h2?.length || 0,
+    })),
   };
 
   return structuredData;

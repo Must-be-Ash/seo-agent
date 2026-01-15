@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getReportByRunId } from '@/lib/db';
+import { getReportByRunId, updateReport } from '@/lib/db';
 
 interface RouteParams {
   params: Promise<{
@@ -35,6 +35,24 @@ export async function GET(request: Request, { params }: RouteParams) {
     console.error('Report fetch error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch report' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: Request, { params }: RouteParams) {
+  try {
+    const { runId } = await params;
+    const body = await request.json();
+
+    // Update report in database
+    await updateReport(runId, body);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Report update error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update report' },
       { status: 500 }
     );
   }

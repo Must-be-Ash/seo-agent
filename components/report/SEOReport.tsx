@@ -3,6 +3,7 @@
 import type { StructuredReportData } from '@/types/report-data';
 import { ExecutiveSummary } from './ExecutiveSummary';
 import { MetricsComparison } from './MetricsComparison';
+import { CompetitorList } from './CompetitorList';
 import { GapAnalysis } from './GapAnalysis';
 import { Recommendations } from './Recommendations';
 import { ContentOutline } from './ContentOutline';
@@ -23,6 +24,11 @@ export function SEOReport({ data }: SEOReportProps) {
       <MetricsComparison
         yourMetrics={data.yourMetrics}
         competitorBenchmarks={data.competitorBenchmarks}
+      />
+
+      <CompetitorList
+        competitors={data.competitors}
+        primaryKeyword={data.keywords.primary}
       />
 
       <GapAnalysis gaps={data.gaps} />

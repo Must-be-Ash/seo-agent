@@ -425,7 +425,15 @@ Include a "Total Estimated Word Count" at the end.`;
  * Creates structured JSON data for the report (no HTML generation)
  */
 export async function generateReportData(
-  reportData: any
+  reportData: {
+    userSiteData: any;
+    discoveredKeywords: any;
+    patterns: any;
+    gaps: Array<any>;
+    recommendations: any;
+    score: number;
+    competitorData?: Array<any>;
+  }
 ): Promise<StructuredReportData> {
   console.log('[Step 8] Generating structured report data');
 
@@ -688,6 +696,13 @@ Return only the summary text, no markdown, no formatting, no quotes.`;
       primary: reportData.discoveredKeywords.primary,
       secondary: reportData.discoveredKeywords.secondary || [],
     },
+    competitors: (reportData.competitorData || []).map((comp: any) => ({
+      rank: comp.rank,
+      url: comp.url,
+      title: comp.title || comp.url,
+      wordCount: comp.wordCount || 0,
+      h2Count: comp.h2?.length || 0,
+    })),
   };
 
   console.log('[Step 8] ✓ Generated structured report data');

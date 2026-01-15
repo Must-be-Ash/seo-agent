@@ -1,7 +1,6 @@
 'use client';
 
 import { CheckCircle2, Circle, Loader2, XCircle } from 'lucide-react';
-import { TextShimmer } from './ui/text-shimmer';
 
 interface StepUpdate {
   stepId: string;
@@ -10,6 +9,7 @@ interface StepUpdate {
   timestamp: number;
   duration?: number;
   error?: string;
+  subStep?: string;
 }
 
 interface WorkflowStepTimelineProps {
@@ -20,80 +20,121 @@ export function WorkflowStepTimeline({ steps }: WorkflowStepTimelineProps) {
   const getStatusIcon = (status: StepUpdate['status']) => {
     switch (status) {
       case 'pending':
-        return <Circle className="w-5 h-5 text-slate-300" />;
+        return <Circle className="w-5 h-5" style={{ color: '#333333' }} strokeWidth={1.5} />;
       case 'running':
-        return <Loader2 className="w-5 h-5 text-black animate-spin" />;
+        return <Loader2 className="w-5 h-5" style={{ color: '#888888' }} animate-spin />;
       case 'success':
-        return <CheckCircle2 className="w-5 h-5 text-emerald-500" />;
+        return (
+          <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: '#1A3A1A' }}>
+            <CheckCircle2 className="w-4 h-4" style={{ color: '#22C55E' }} />
+          </div>
+        );
       case 'error':
-        return <XCircle className="w-5 h-5 text-red-500" />;
+        return <XCircle className="w-5 h-5" style={{ color: '#666666' }} />;
     }
   };
 
   const getStatusStyle = (status: StepUpdate['status']) => {
     switch (status) {
       case 'pending':
-        return 'bg-slate-50 border-slate-200';
+        return {
+          text: '#666666',
+          subText: '#555555',
+        };
       case 'running':
-        return 'bg-black/5 border-black/20';
+        return {
+          text: '#CCCCCC',
+          subText: '#888888',
+        };
       case 'success':
-        return 'bg-emerald-50 border-emerald-200';
+        return {
+          text: '#FFFFFF',
+          subText: '#888888',
+        };
       case 'error':
-        return 'bg-red-50 border-red-200';
+        return {
+          text: '#666666',
+          subText: '#555555',
+        };
     }
   };
 
   return (
-    <div className="space-y-3">
-      {steps.map((step, index) => (
-        <div key={step.stepId} className="relative">
-          {/* Connector line */}
-          {index < steps.length - 1 && (
-            <div className="absolute left-[10px] top-[28px] w-0.5 h-[calc(100%+12px)] bg-slate-200" />
-          )}
+    <div className="space-y-1">
+      {steps.map((step, index) => {
+        const styles = getStatusStyle(step.status);
+        const isRunning = step.status === 'running';
+        const isSuccess = step.status === 'success';
+        
+        return (
+          <div key={step.stepId} className="relative">
+            {/* Connector line */}
+            {index < steps.length - 1 && (
+              <div 
+                className="absolute left-[10px] top-[24px] w-px transition-all duration-500"
+                style={{
+                  height: 'calc(100% + 4px)',
+                  backgroundColor: isSuccess ? '#22C55E' : '#2A2A2A',
+                  opacity: isSuccess ? 0.3 : 1,
+                }}
+              />
+            )}
 
-          {/* Step card */}
-          <div
-            className={`relative flex items-center gap-3 p-3 rounded-lg border transition-all ${getStatusStyle(
-              step.status
-            )}`}
-          >
-            <div className="relative z-10 flex-shrink-0">
-              {getStatusIcon(step.status)}
-            </div>
+            {/* Step item - minimal design */}
+            <div className="relative flex items-center gap-4 py-2">
+              <div className="relative z-10 flex-shrink-0">
+                {getStatusIcon(step.status)}
+              </div>
 
-            <div className="flex-1 min-w-0">
-              {step.status === 'running' ? (
-                <TextShimmer className="text-sm font-medium text-slate-900">
-                  {step.stepLabel}
-                </TextShimmer>
-              ) : (
-                <p
-                  className={`text-sm font-medium ${
-                    step.status === 'success'
-                      ? 'text-emerald-700'
-                      : step.status === 'error'
-                      ? 'text-red-700'
-                      : 'text-slate-500'
-                  }`}
-                >
-                  {step.stepLabel}
-                </p>
-              )}
-
-              {step.error && (
-                <p className="text-xs text-red-600 mt-1">{step.error}</p>
-              )}
-
-              {step.duration && step.status === 'success' && (
-                <p className="text-xs text-slate-500 mt-1">
-                  Completed in {(step.duration / 1000).toFixed(1)}s
-                </p>
-              )}
+              <div className="flex-1 min-w-0">
+                {isRunning ? (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span 
+                        className="text-sm font-medium"
+                        style={{
+                          color: styles.text,
+                          background: 'linear-gradient(90deg, #666666 0%, #CCCCCC 50%, #666666 100%)',
+                          backgroundSize: '200% 100%',
+                          WebkitBackgroundClip: 'text',
+                          WebkitTextFillColor: 'transparent',
+                          animation: 'shimmer 2s ease-in-out infinite',
+                        }}
+                      >
+                        {step.stepLabel}
+                      </span>
+                    </div>
+                    {step.subStep && (
+                      <p className="text-xs ml-9" style={{ color: styles.subText }}>
+                        {step.subStep}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <p
+                      className="text-sm font-medium"
+                      style={{ color: styles.text }}
+                    >
+                      {step.stepLabel}
+                    </p>
+                    {step.duration && step.status === 'success' && (
+                      <p className="text-xs ml-9" style={{ color: styles.subText }}>
+                        {(step.duration / 1000).toFixed(1)}s
+                      </p>
+                    )}
+                    {step.error && (
+                      <p className="text-xs ml-9" style={{ color: '#666666' }}>
+                        {step.error}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

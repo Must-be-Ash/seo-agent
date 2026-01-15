@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { TextShimmer } from '@/components/ui/text-shimmer';
-import { ArrowRight, Search } from 'lucide-react';
+import { ArrowRight, Search, Sparkles } from 'lucide-react';
 import { useIsSignedIn } from '@coinbase/cdp-hooks';
 import { getCurrentUser, toViemAccount } from '@coinbase/cdp-core';
 import { wrapFetchWithPayment, x402Client } from '@x402/fetch';
@@ -12,7 +12,7 @@ import { createWalletClient, http, publicActions } from 'viem';
 import { base } from 'viem/chains';
 import { COST_CONFIG } from '@/lib/config';
 import { validateUrl } from '@/lib/validation';
-import { Header } from '@/components/Header';
+
 
 export default function Home() {
   const [url, setUrl] = useState('');
@@ -35,7 +35,6 @@ export default function Home() {
       try {
         const user = await getCurrentUser();
 
-        // Use Smart Wallet (ERC-4337) for x402 v2 payments
         if (!user?.evmSmartAccounts?.[0]) {
           console.warn('[Setup] No Smart Wallet found. User may need to sign out and back in.');
           return;
@@ -53,7 +52,6 @@ export default function Home() {
 
         console.log('[Setup] Setting up x402 v2 client for Base network (eip155:8453)');
 
-        // Create signer object that matches ClientEvmSigner interface
         const signer = {
           address: viemAccount.address,
           signTypedData: async (message: any) => {
@@ -67,7 +65,6 @@ export default function Home() {
           },
         };
 
-        // Create x402 v2 client with EVM scheme for Base network
         const client = new x402Client()
           .register('eip155:8453', new ExactEvmScheme(signer));
 
@@ -87,17 +84,14 @@ export default function Home() {
     e.preventDefault();
     setError(null);
 
-    // Validate URL
     const urlError = validateUrl(url);
     if (urlError) {
       setError(urlError);
       return;
     }
 
-    // Check if signed in
     if (!isSignedIn) {
       setError('Please sign in to continue');
-      // Trigger auth modal
       setTimeout(() => {
         const authButton = document.querySelector('[data-testid="cdp-auth-button"]') as HTMLButtonElement;
         if (authButton) authButton.click();
@@ -105,7 +99,6 @@ export default function Home() {
       return;
     }
 
-    // Check if payment fetch is ready
     if (!paymentFetch) {
       setError('Payment system is initializing. Please wait a moment and try again.');
       return;
@@ -117,19 +110,17 @@ export default function Home() {
       console.log('[SEO Analysis] Starting analysis for:', url);
       console.log('[Payment] Using x402-wrapped fetch for payment handling');
 
-      // Use wrapped fetch - automatically handles x402 payment flow
       const response = await paymentFetch('/api/workflows/seo-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           url,
-          userId: 'user-placeholder', // Can be enhanced later
+          userId: 'user-placeholder',
         }),
       });
 
       console.log('[Workflow] Response status:', response.status);
 
-      // Handle response
       if (response.status === 402) {
         console.warn('[Payment] Payment required (402), x402-fetch will handle automatically');
         return;
@@ -143,7 +134,6 @@ export default function Home() {
       const { runId } = await response.json();
       console.log('[Workflow] ✓ Analysis started:', runId);
 
-      // Redirect to report page
       router.push(`/report/${runId}`);
 
     } catch (error) {
@@ -168,34 +158,33 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-slate-50">
-      <Header />
-
-      <main className="max-w-4xl mx-auto px-6 py-16">
+    <div className="flex items-center justify-center" style={{ backgroundColor: '#222222', minHeight: 'calc(100vh - 70px)', paddingBottom: '80px' }}>
+      <main className="w-full">
         {/* Hero Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-slate-900 mb-4">
-            Discover Your SEO Gaps
-          </h1>
-          <p className="text-xl text-slate-600 mb-2">
-            Analyze competitor SEO and find content opportunities
-          </p>
-          <p className="text-sm text-slate-500">
-            Powered by Hyperbrowser x402 • Just ${COST_CONFIG.seoAnalysis} USDC
-          </p>
-        </div>
+        <section className="max-w-6xl mx-auto px-6 w-full">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4" style={{ backgroundColor: '#1A1A1A', border: '1px solid #2A2A2A' }}>
+              <Sparkles className="w-4 h-4" style={{ color: '#888888' }} />
+              <span className="text-sm font-medium" style={{ color: '#CCCCCC' }}>AI-Powered SEO Analysis</span>
+            </div>
 
-        {/* Main Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
-            {/* URL Input */}
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-slate-700">
-                Website URL to Analyze
-              </label>
+            <h1 className="text-7xl font-bold mb-4 leading-tight" style={{ color: '#FFFFFF' }}>
+              Find Your SEO
+              <br />
+              <span style={{ color: '#888888' }}>Gaps in Minutes</span>
+            </h1>
+
+            <p className="text-2xl mb-3 max-w-2xl mx-auto leading-relaxed" style={{ color: '#CCCCCC' }}>
+              Compare your site against top competitors and get actionable insights to improve your search rankings
+            </p>
+          </div>
+
+          {/* Main CTA Form */}
+          <div className="max-w-2xl mx-auto">
+            <form onSubmit={handleSubmit} className="space-y-3">
               <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                  <Search className="h-5 w-5" />
+                <div className="absolute left-6 top-1/2 -translate-y-1/2" style={{ color: '#666666' }}>
+                  <Search className="h-6 w-6" />
                 </div>
                 <input
                   type="text"
@@ -206,70 +195,60 @@ export default function Home() {
                   }}
                   onFocus={() => setFocused(true)}
                   onBlur={() => setFocused(false)}
-                  placeholder="https://example.com"
+                  placeholder="Enter your website URL (e.g., https://example.com)"
                   disabled={loading}
-                  className={`w-full pl-12 pr-4 py-4 text-lg rounded-xl border-2 transition-all
-                    ${focused ? 'border-black ring-4 ring-black/5' : 'border-slate-200'}
-                    ${error ? 'border-red-500' : ''}
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                    focus:outline-none`}
+                  className="w-full pl-16 pr-6 py-5 text-lg rounded-xl border-2 transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    backgroundColor: '#1A1A1A',
+                    borderColor: focused ? '#444444' : (error ? '#EF4444' : '#2A2A2A'),
+                    color: '#FFFFFF',
+                  }}
                 />
               </div>
+
               {error && (
-                <p className="text-sm text-red-600 flex items-center gap-1">
+                <p className="text-sm flex items-center gap-2 px-2" style={{ color: '#EF4444' }}>
                   {error}
                 </p>
               )}
-            </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading || !url.trim()}
-              className="mt-6 w-full py-4 px-6 bg-black text-white rounded-xl font-medium text-lg
-                hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed
-                transition-all flex items-center justify-center gap-2 group"
-            >
-              {loading ? (
-                <TextShimmer className="text-lg font-medium">
-                  Analyzing your site...
-                </TextShimmer>
-              ) : (
-                <>
-                  Generate SEO Report (${COST_CONFIG.seoAnalysis} USDC)
-                  <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+              <button
+                type="submit"
+                disabled={loading || !url.trim()}
+                className="w-full py-5 px-6 rounded-xl font-semibold text-lg transition-all flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden"
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  color: '#000000',
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading && url.trim()) {
+                    e.currentTarget.style.backgroundColor = '#F5F5F5';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!loading && url.trim()) {
+                    e.currentTarget.style.backgroundColor = '#FFFFFF';
+                  }
+                }}
+              >
+                {loading ? (
+                  <span className="text-lg font-semibold" style={{ color: '#000000' }}>
+                    Analyzing your site...
+                  </span>
+                ) : (
+                  <>
+                    <span>Start Analysis</span>
+                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
 
-        {/* Features Grid */}
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            {
-              title: 'Discover Keywords',
-              description: 'AI automatically identifies your target keywords from your content',
-            },
-            {
-              title: 'Analyze Competitors',
-              description: 'Fetches and analyzes top 10 ranking pages with structured data',
-            },
-            {
-              title: 'Actionable Insights',
-              description: 'Get specific recommendations to improve your SEO rankings',
-            },
-          ].map((feature, i) => (
-            <div key={i} className="bg-white rounded-xl p-6 border border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                {feature.title}
-              </h3>
-              <p className="text-sm text-slate-600">
-                {feature.description}
+              <p className="text-center text-sm" style={{ color: '#999999' }}>
+                Powered by Hyperbrowser • ${COST_CONFIG.seoAnalysis} USDC per analysis
               </p>
-            </div>
-          ))}
-        </div>
+            </form>
+          </div>
+        </section>
       </main>
     </div>
   );

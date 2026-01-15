@@ -59,4 +59,11 @@ export interface StructuredReportData {
     primary: string;
     secondary: string[];
   };
+  competitors: Array<{
+    rank: number;
+    url: string;
+    title: string;
+    wordCount: number;
+    h2Count: number;
+  }>;
 }

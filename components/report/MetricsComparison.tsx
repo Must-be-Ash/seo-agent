@@ -61,17 +61,17 @@ export function MetricsComparison({ yourMetrics, competitorBenchmarks }: Metrics
     const percentDiff = competitor > 0 ? (diff / competitor) * 100 : 0;
     
     if (Math.abs(percentDiff) < 5) {
-      return { icon: Minus, color: 'text-slate-500', text: 'Similar' };
+      return { icon: Minus, color: '#888888', text: 'Similar' };
     }
     if (diff > 0) {
-      return { icon: TrendingUp, color: 'text-emerald-600', text: `${Math.abs(percentDiff).toFixed(0)}% above` };
+      return { icon: TrendingUp, color: '#22C55E', text: `${Math.abs(percentDiff).toFixed(0)}% above` };
     }
-    return { icon: TrendingDown, color: 'text-red-600', text: `${Math.abs(percentDiff).toFixed(0)}% below` };
+    return { icon: TrendingDown, color: '#EF4444', text: `${Math.abs(percentDiff).toFixed(0)}% below` };
   };
 
   return (
-    <div className="bg-white rounded-2xl p-8 border border-slate-200">
-      <h2 className="text-2xl font-bold text-slate-900 mb-6">Your Metrics vs Competitors</h2>
+    <div className="rounded-2xl p-8 border" style={{ backgroundColor: '#1A1A1A', borderColor: '#2A2A2A' }}>
+      <h2 className="text-2xl font-bold mb-6" style={{ color: '#FFFFFF' }}>Your Metrics vs Competitors</h2>
       
       <div className="space-y-4">
         {metrics.map((metric) => {
@@ -81,20 +81,21 @@ export function MetricsComparison({ yourMetrics, competitorBenchmarks }: Metrics
           return (
             <div
               key={metric.label}
-              className="grid grid-cols-3 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200"
+              className="grid grid-cols-3 gap-4 p-4 rounded-xl border"
+              style={{ backgroundColor: '#222222', borderColor: '#2A2A2A' }}
             >
               <div>
-                <p className="text-sm text-slate-600 mb-1">{metric.label}</p>
-                <p className="text-2xl font-bold text-slate-900">{metric.your.toLocaleString()}</p>
-                <p className="text-xs text-slate-500">Your site</p>
+                <p className="text-sm mb-1" style={{ color: '#888888' }}>{metric.label}</p>
+                <p className="text-2xl font-bold" style={{ color: '#FFFFFF' }}>{metric.your.toLocaleString()}</p>
+                <p className="text-xs" style={{ color: '#666666' }}>Your site</p>
               </div>
               <div>
-                <p className="text-sm text-slate-600 mb-1">Competitor Average</p>
-                <p className="text-2xl font-bold text-slate-700">{metric.competitor.toLocaleString()}</p>
-                <p className="text-xs text-slate-500">Based on {competitorBenchmarks.totalCompetitors} competitors</p>
+                <p className="text-sm mb-1" style={{ color: '#888888' }}>Competitor Average</p>
+                <p className="text-2xl font-bold" style={{ color: '#CCCCCC' }}>{metric.competitor.toLocaleString()}</p>
+                <p className="text-xs" style={{ color: '#666666' }}>Based on {competitorBenchmarks.totalCompetitors} competitors</p>
               </div>
               <div className="flex items-center justify-end">
-                <div className={`flex items-center gap-2 ${comparison.color}`}>
+                <div className="flex items-center gap-2" style={{ color: comparison.color }}>
                   <Icon className="w-5 h-5" />
                   <span className="font-semibold">{comparison.text}</span>
                 </div>
@@ -104,17 +105,17 @@ export function MetricsComparison({ yourMetrics, competitorBenchmarks }: Metrics
         })}
       </div>
 
-      <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
+      <div className="mt-6 p-4 rounded-xl border" style={{ backgroundColor: '#222222', borderColor: '#2A2A2A' }}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-slate-600 mb-1">Schema Markup</p>
-            <p className="text-lg font-semibold text-slate-900">
+            <p className="text-sm mb-1" style={{ color: '#888888' }}>Schema Markup</p>
+            <p className="text-lg font-semibold" style={{ color: '#FFFFFF' }}>
               {yourMetrics.hasSchema ? 'Present' : 'Missing'}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-slate-600 mb-1">Competitor Usage</p>
-            <p className="text-lg font-semibold text-slate-700">
+            <p className="text-sm mb-1" style={{ color: '#888888' }}>Competitor Usage</p>
+            <p className="text-lg font-semibold" style={{ color: '#CCCCCC' }}>
               {competitorBenchmarks.schemaUsage}/{competitorBenchmarks.totalCompetitors} use schema
             </p>
           </div>

@@ -9,15 +9,15 @@ export function Header() {
   const { isSignedIn } = useIsSignedIn();
 
   return (
-    <header className="relative py-4 px-6 border-b border-slate-200 bg-white">
+    <header className="relative py-4 px-6 border-b" style={{ borderColor: '#2A2A2A', backgroundColor: '#1A1A1A' }}>
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="inline-flex items-center gap-3 group">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">S</span>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#222222' }}>
+              <span className="font-bold text-lg" style={{ color: '#FFFFFF' }}>S</span>
             </div>
-            <span className="text-lg font-semibold text-slate-900 group-hover:text-slate-600 transition-colors">
+            <span className="text-lg font-semibold group-hover:opacity-80 transition-opacity" style={{ color: '#FFFFFF' }}>
               SEO Gap Analyzer
             </span>
           </div>

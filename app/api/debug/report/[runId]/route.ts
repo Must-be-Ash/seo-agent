@@ -48,6 +48,7 @@ export async function GET(request: Request, { params }: RouteParams) {
         hasSchema: report.userSiteData.hasSchema,
       } : null,
       discoveredKeywords: report.discoveredKeywords || null,
+      competitorData: report.competitorData || null,
     });
   } catch (error) {
     console.error('Error fetching report:', error);

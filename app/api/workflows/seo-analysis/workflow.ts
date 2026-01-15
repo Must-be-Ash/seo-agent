@@ -2,8 +2,33 @@
 // Uses Vercel Workflow Kit with 'use workflow' and 'use step' directives
 
 import * as steps from './steps';
-import { updateReport } from '@/lib/db';
 import type { SEOData } from '@/lib/schemas';
+
+// Helper function to update report via API
+async function updateReportViaAPI(runId: string, data: any) {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/report/${runId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to update report: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Helper function to get report via API
+async function getReportViaAPI(runId: string) {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/report/${runId}`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to get report: ${response.statusText}`);
+  }
+
+  return response.json();
+}
 
 // ============================================================================
 // STEP FUNCTIONS
@@ -17,7 +42,7 @@ async function fetchUserSiteStep(url: string, runId: string) {
   const userSiteData = await steps.fetchUserSite(url);
 
   // Save to database
-  await updateReport(runId, { userSiteData });
+  await updateReportViaAPI(runId, { userSiteData });
 
   return userSiteData;
 }
@@ -29,7 +54,7 @@ async function discoverKeywordsStep(userSiteData: SEOData, runId: string) {
   const discoveredKeywords = await steps.discoverKeywords(userSiteData);
 
   // Save to database
-  await updateReport(runId, { discoveredKeywords });
+  await updateReportViaAPI(runId, { discoveredKeywords });
 
   return discoveredKeywords;
 }
@@ -54,7 +79,7 @@ async function fetchCompetitorDataStep(
   const competitorData = await steps.fetchCompetitorData(searchResults, primaryKeyword);
 
   // Save to database
-  await updateReport(runId, { competitorData });
+  await updateReportViaAPI(runId, { competitorData });
 
   return competitorData;
 }
@@ -66,7 +91,7 @@ async function analyzePatternsStep(userSiteData: SEOData, competitorData: Array<
   const patterns = await steps.analyzePatterns(userSiteData, competitorData);
 
   // Save to database
-  await updateReport(runId, { patterns });
+  await updateReportViaAPI(runId, { patterns });
 
   return patterns;
 }
@@ -83,7 +108,7 @@ async function identifyGapsStep(
   const gaps = await steps.identifyGaps(userSiteData, patterns, competitorData);
 
   // Save to database
-  await updateReport(runId, { gaps });
+  await updateReportViaAPI(runId, { gaps });
 
   return gaps;
 }
@@ -95,7 +120,7 @@ async function generateRecommendationsStep(gaps: Array<any>, userSiteData: SEODa
   const recommendations = await steps.generateRecommendations(gaps, userSiteData);
 
   // Save to database
-  await updateReport(runId, { recommendations });
+  await updateReportViaAPI(runId, { recommendations });
 
   return recommendations;
 }
@@ -125,7 +150,7 @@ async function calculateScoreStep(
   score = Math.max(0, Math.min(100, score));
 
   // Save score
-  await updateReport(runId, { score });
+  await updateReportViaAPI(runId, { score });
 
   return score;
 }
@@ -139,6 +164,7 @@ async function generateReportDataStep(
     gaps: Array<any>;
     recommendations: any;
     score: number;
+    competitorData: Array<any>;
   }
 ) {
   "use step";
@@ -147,7 +173,7 @@ async function generateReportDataStep(
   const reportDataJson = await steps.generateReportData(reportData);
 
   // Save structured data to database
-  await updateReport(reportData.runId, { reportData: reportDataJson });
+  await updateReportViaAPI(reportData.runId, { reportData: reportDataJson });
 
   return reportDataJson;
 }
@@ -158,7 +184,7 @@ async function finalizeStep(runId: string) {
   console.log('[Workflow] Finalizing report');
 
   // Update status to completed
-  await updateReport(runId, {
+  await updateReportViaAPI(runId, {
     status: 'completed',
   });
 
@@ -201,6 +227,8 @@ export const seoAnalysisWorkflow = async (input: { url: string; runId: string })
   const score = await calculateScoreStep(userSiteData, patterns, gaps, runId);
 
   // Step 9: Generate structured report data
+  // Fetch competitor data from database for the report
+  const report = await getReportViaAPI(runId);
   const reportData = await generateReportDataStep({
     runId,
     userSiteData,
@@ -209,6 +237,7 @@ export const seoAnalysisWorkflow = async (input: { url: string; runId: string })
     gaps,
     recommendations,
     score,
+    competitorData: report?.competitorData || [],
   });
 
   // Final step: Mark as completed

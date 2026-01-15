@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { WorkflowProgressBar } from './WorkflowProgressBar';
 import { WorkflowStepTimeline } from './WorkflowStepTimeline';
 import { SEOReport } from './report/SEOReport';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { DownloadReportButton } from './DownloadReportButton';
 import type { StructuredReportData } from '@/types/report-data';
 
 interface StepUpdate {
@@ -14,6 +15,7 @@ interface StepUpdate {
   timestamp: number;
   duration?: number;
   error?: string;
+  subStep?: string;
 }
 
 interface WorkflowStatusClientProps {
@@ -40,9 +42,14 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
     { stepId: 'generate-report', stepLabel: 'Creating your report', status: initialData.completedSteps.reportHtml ? 'success' : 'pending', timestamp: Date.now() },
   ]);
   const [reportData, setReportData] = useState<StructuredReportData | null>(null);
-  const [reportHtml, setReportHtml] = useState<string | null>(null); // Fallback for old reports
+  const [reportHtml, setReportHtml] = useState<string | null>(null);
   const [score, setScore] = useState<number | null>(null);
   const [userUrl, setUserUrl] = useState(initialData.userUrl);
+  const [currentSubStep, setCurrentSubStep] = useState<string | undefined>();
+  const [showSteps, setShowSteps] = useState(false);
+
+  // Track step start times for duration calculation
+  const stepStartTimes = useState<Map<string, number>>(new Map())[0];
 
   // Fetch report on initial load if already completed
   useEffect(() => {
@@ -64,7 +71,7 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
   // Poll for status updates every 1 second
   useEffect(() => {
     if (status === 'completed' || status === 'failed' || status === 'error') {
-      return; // Stop polling when done
+      return;
     }
 
     const pollStatus = async () => {
@@ -77,34 +84,92 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
         setUserUrl(data.userUrl);
         setScore(data.score);
 
-        // Update step statuses based on completed steps
-        setSteps(prev => prev.map(step => {
-          if (step.stepId === 'fetch-site' && data.completedSteps.userSiteData) {
-            return { ...step, status: 'success' as const };
-          }
-          if (step.stepId === 'discover-keywords' && data.completedSteps.discoveredKeywords) {
-            return { ...step, status: 'success' as const };
-          }
-          if (step.stepId === 'search-competitors' && data.completedSteps.competitorData) {
-            return { ...step, status: 'success' as const };
-          }
-          if (step.stepId === 'fetch-competitors' && data.completedSteps.competitorData) {
-            return { ...step, status: 'success' as const };
-          }
-          if (step.stepId === 'analyze-patterns' && data.completedSteps.patterns) {
-            return { ...step, status: 'success' as const };
-          }
-          if (step.stepId === 'identify-gaps' && data.completedSteps.gaps) {
-            return { ...step, status: 'success' as const };
-          }
-          if (step.stepId === 'generate-recommendations' && data.completedSteps.recommendations) {
-            return { ...step, status: 'success' as const };
-          }
-          if (step.stepId === 'generate-report' && data.completedSteps.reportHtml) {
-            return { ...step, status: 'success' as const };
-          }
-          return step;
-        }));
+        // Update step statuses and track durations
+        setSteps(prev => {
+          const updated = prev.map((step, index) => {
+            let newStatus = step.status;
+            let duration = step.duration;
+            let subStep = step.subStep;
+
+            // Check each step completion
+            const stepCompletionMap: Record<string, keyof typeof data.completedSteps> = {
+              'fetch-site': 'userSiteData',
+              'discover-keywords': 'discoveredKeywords',
+              'search-competitors': 'competitorData',
+              'fetch-competitors': 'competitorData',
+              'analyze-patterns': 'patterns',
+              'identify-gaps': 'gaps',
+              'generate-recommendations': 'recommendations',
+              'generate-report': 'reportHtml',
+            };
+
+            const completionKey = stepCompletionMap[step.stepId];
+            if (completionKey && data.completedSteps[completionKey] && step.status !== 'success') {
+              newStatus = 'success';
+              const startTime = stepStartTimes.get(step.stepId) || step.timestamp;
+              duration = Date.now() - startTime;
+            }
+
+            return {
+              ...step,
+              status: newStatus,
+              duration,
+              subStep,
+            };
+          });
+
+          // Now determine which step should be running
+          return updated.map((step, index) => {
+            // If already success or error, keep it
+            if (step.status === 'success' || step.status === 'error') {
+              return step;
+            }
+
+            // Find the first pending step after the last success
+            let lastSuccessIndex = -1;
+            for (let i = updated.length - 1; i >= 0; i--) {
+              if (updated[i].status === 'success') {
+                lastSuccessIndex = i;
+                break;
+              }
+            }
+            const isFirstPending = index === lastSuccessIndex + 1 && step.status === 'pending';
+
+            if (isFirstPending) {
+              if (!stepStartTimes.has(step.stepId)) {
+                stepStartTimes.set(step.stepId, Date.now());
+              }
+              
+              // Add sub-step hints for long-running operations
+              let subStep = step.subStep;
+              if (step.stepId === 'fetch-site') {
+                subStep = 'Extracting SEO data from your site...';
+              } else if (step.stepId === 'discover-keywords') {
+                subStep = 'Analyzing content with AI...';
+              } else if (step.stepId === 'search-competitors') {
+                subStep = 'Searching search engines...';
+              } else if (step.stepId === 'fetch-competitors') {
+                subStep = 'Fetching competitor pages in parallel...';
+              } else if (step.stepId === 'analyze-patterns') {
+                subStep = 'Identifying common patterns...';
+              } else if (step.stepId === 'identify-gaps') {
+                subStep = 'Analyzing SEO gaps with AI...';
+              } else if (step.stepId === 'generate-recommendations') {
+                subStep = 'Generating content outline...';
+              } else if (step.stepId === 'generate-report') {
+                subStep = 'Structuring report data...';
+              }
+
+              return {
+                ...step,
+                status: 'running',
+                subStep,
+              };
+            }
+
+            return step;
+          });
+        });
 
         // Fetch report data when completed
         if (data.status === 'completed') {
@@ -122,24 +187,24 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
     };
 
     pollStatus();
-    const interval = setInterval(pollStatus, 1000); // Poll every 1 second
+    const interval = setInterval(pollStatus, 1000);
 
     return () => clearInterval(interval);
-  }, [runId, status]);
+  }, [runId, status, stepStartTimes]);
 
   // Error state
   if (status === 'failed' || status === 'error') {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-slate-50 flex items-center justify-center p-6">
-        <div className="max-w-2xl w-full">
-          <div className="bg-white rounded-2xl shadow-lg border border-red-200 p-8">
+      <div className="min-h-screen" style={{ backgroundColor: '#111111' }}>
+        <div className="max-w-2xl mx-auto px-6 py-16">
+          <div className="rounded-2xl border p-8" style={{ backgroundColor: '#1A1A1A', borderColor: '#2A2A2A' }}>
             <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-red-100 rounded-full">
-                <XCircle className="w-8 h-8 text-red-600" />
+              <div className="p-3 rounded-full" style={{ backgroundColor: '#222222' }}>
+                <XCircle className="w-8 h-8" style={{ color: '#666666' }} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">Analysis Failed</h1>
-                <p className="text-slate-600">Something went wrong during the analysis</p>
+                <h1 className="text-2xl font-bold" style={{ color: '#FFFFFF' }}>Analysis Failed</h1>
+                <p style={{ color: '#888888' }}>Something went wrong during the analysis</p>
               </div>
             </div>
 
@@ -148,7 +213,10 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
             <div className="mt-8 flex gap-3">
               <button
                 onClick={() => window.location.href = '/'}
-                className="flex-1 px-6 py-3 bg-black text-white rounded-xl font-medium hover:bg-slate-800 transition-colors"
+                className="flex-1 px-6 py-3 rounded-xl font-medium transition-colors"
+                style={{ backgroundColor: '#222222', color: '#FFFFFF' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2A2A2A'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#222222'}
               >
                 Try Again
               </button>
@@ -161,38 +229,92 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
 
   // Success state - show completed report
   if (status === 'completed' && (reportData || reportHtml)) {
+    const completedCount = steps.filter(s => s.status === 'success').length;
+    const totalDuration = steps
+      .filter(s => s.duration)
+      .reduce((sum, s) => sum + (s.duration || 0), 0);
+
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-slate-50">
-        <div className="max-w-6xl mx-auto px-6 py-16">
-          {/* Success header */}
-          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8 mb-8">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="p-3 bg-emerald-100 rounded-full">
-                <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+      <div className="min-h-screen" style={{ backgroundColor: '#222222' }}>
+        <div className="max-w-6xl mx-auto px-6 py-12">
+          {/* Success header - minimal and elegant */}
+          <div className="mb-12">
+            <div className="flex items-center gap-4 mb-4">
+              <div 
+                className="w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: '#1A3A1A', border: '2px solid #22C55E' }}
+              >
+                <CheckCircle2 className="w-8 h-8" style={{ color: '#22C55E' }} />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900">Analysis Complete!</h1>
-                <p className="text-slate-600">Your SEO gap analysis is ready</p>
+              <div className="flex-1">
+                <h1 className="text-4xl font-bold mb-2" style={{ color: '#FFFFFF' }}>Analysis Complete</h1>
+                <p className="text-lg" style={{ color: '#888888' }}>{userUrl}</p>
               </div>
             </div>
 
-            {/* Collapsible workflow steps */}
-            <details className="mt-6">
-              <summary className="cursor-pointer text-sm font-medium text-slate-700 hover:text-slate-900">
-                View Workflow Steps
-              </summary>
-              <div className="mt-4">
-                <WorkflowStepTimeline steps={steps} />
+            {/* Stats bar */}
+            <div className="flex items-center gap-6 mt-6 pt-6 border-t" style={{ borderColor: '#2A2A2A' }}>
+              <div>
+                <p className="text-xs uppercase tracking-wider mb-1" style={{ color: '#666666' }}>Steps Completed</p>
+                <p className="text-2xl font-bold" style={{ color: '#FFFFFF' }}>{completedCount}/{steps.length}</p>
               </div>
-            </details>
+              {totalDuration > 0 && (
+                <div>
+                  <p className="text-xs uppercase tracking-wider mb-1" style={{ color: '#666666' }}>Total Time</p>
+                  <p className="text-2xl font-bold" style={{ color: '#FFFFFF' }}>{(totalDuration / 1000).toFixed(0)}s</p>
+                </div>
+              )}
+              {score !== null && (
+                <div>
+                  <p className="text-xs uppercase tracking-wider mb-1" style={{ color: '#666666' }}>SEO Score</p>
+                  <p className="text-2xl font-bold" style={{ color: '#FFFFFF' }}>{score}/100</p>
+                </div>
+              )}
+            </div>
 
-            <div className="mt-8 flex gap-3">
+            {/* Collapsible workflow steps - cleaner design */}
+            <div className="mt-6">
               <button
-                onClick={() => window.location.href = '/'}
-                className="px-6 py-3 bg-black text-white rounded-xl font-medium hover:bg-slate-800 transition-colors"
+                onClick={() => setShowSteps(!showSteps)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors w-full text-left"
+                style={{ 
+                  backgroundColor: showSteps ? '#222222' : 'transparent',
+                  color: '#888888'
+                }}
+                onMouseEnter={(e) => {
+                  if (!showSteps) e.currentTarget.style.backgroundColor = '#1A1A1A';
+                }}
+                onMouseLeave={(e) => {
+                  if (!showSteps) e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
-                Analyze Another Site
+                {showSteps ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+                <span className="text-sm font-medium">Workflow Steps</span>
+                <span className="ml-auto text-xs" style={{ color: '#666666' }}>
+                  {completedCount} completed
+                </span>
               </button>
+              
+              {showSteps && (
+                <div className="mt-4 pl-2">
+                  <WorkflowStepTimeline steps={steps} />
+                </div>
+              )}
+            </div>
+
+            <div className="mt-8">
+              {reportData && (
+                <DownloadReportButton
+                  reportData={reportData}
+                  userUrl={userUrl}
+                  score={score || 0}
+                  runId={runId}
+                />
+              )}
             </div>
           </div>
 
@@ -200,7 +322,7 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
           {reportData ? (
             <SEOReport data={reportData} />
           ) : reportHtml ? (
-            <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
+            <div className="rounded-2xl border p-8" style={{ backgroundColor: '#1A1A1A', borderColor: '#2A2A2A' }}>
               <div dangerouslySetInnerHTML={{ __html: reportHtml }} />
             </div>
           ) : null}
@@ -210,24 +332,33 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
   }
 
   // Running state - show progress
+  const currentStep = steps.find(s => s.status === 'running');
+  const currentSubStepText = currentStep?.subStep;
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-slate-50">
+    <div className="min-h-screen" style={{ backgroundColor: '#0A0A0A' }}>
       <div className="max-w-4xl mx-auto px-6 py-16">
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2 text-center">
+        <div className="rounded-2xl border p-8" style={{ backgroundColor: '#1A1A1A', borderColor: '#2A2A2A' }}>
+          <h1 className="text-3xl font-bold mb-2 text-center" style={{ color: '#FFFFFF' }}>
             Analyzing Your Site
           </h1>
-          <p className="text-slate-600 mb-8 text-center">
-            Analyzing: {userUrl}
+          <p className="mb-8 text-center" style={{ color: '#888888' }}>
+            {userUrl}
           </p>
 
-          <WorkflowProgressBar progress={progress} currentStep={steps.find(s => s.status === 'running')?.stepLabel || 'Processing...'} totalSteps={steps.length} completedSteps={steps.filter(s => s.status === 'success').length} />
+          <WorkflowProgressBar 
+            progress={progress} 
+            currentStep={currentStep?.stepLabel || 'Processing...'} 
+            totalSteps={steps.length} 
+            completedSteps={steps.filter(s => s.status === 'success').length}
+            subStep={currentSubStepText}
+          />
 
           <div className="mt-8">
             <WorkflowStepTimeline steps={steps} />
           </div>
 
-          <p className="text-sm text-slate-500 text-center mt-8">
+          <p className="text-sm text-center mt-8" style={{ color: '#555555' }}>
             This usually takes 1-2 minutes
           </p>
         </div>

@@ -1,7 +1,5 @@
 'use client';
 
-import { AlertCircle, AlertTriangle, Info } from 'lucide-react';
-
 interface Gap {
   category: string;
   severity: 'high' | 'medium' | 'low';
@@ -15,35 +13,14 @@ interface GapAnalysisProps {
 }
 
 export function GapAnalysis({ gaps }: GapAnalysisProps) {
-  const getSeverityStyles = (severity: 'high' | 'medium' | 'low') => {
+  const getBadgeColor = (severity: 'high' | 'medium' | 'low') => {
     switch (severity) {
       case 'high':
-        return {
-          bg: 'bg-red-50',
-          border: 'border-red-300',
-          icon: AlertCircle,
-          iconColor: 'text-red-600',
-          badge: 'bg-red-600 text-white',
-          text: 'text-red-900',
-        };
+        return { bg: '#EF4444', text: '#FFFFFF' };
       case 'medium':
-        return {
-          bg: 'bg-amber-50',
-          border: 'border-amber-300',
-          icon: AlertTriangle,
-          iconColor: 'text-amber-600',
-          badge: 'bg-amber-600 text-white',
-          text: 'text-amber-900',
-        };
+        return { bg: '#EAB308', text: '#000000' };
       case 'low':
-        return {
-          bg: 'bg-blue-50',
-          border: 'border-blue-300',
-          icon: Info,
-          iconColor: 'text-blue-600',
-          badge: 'bg-blue-600 text-white',
-          text: 'text-blue-900',
-        };
+        return { bg: '#3B82F6', text: '#FFFFFF' };
     }
   };
 
@@ -54,63 +31,51 @@ export function GapAnalysis({ gaps }: GapAnalysisProps) {
   };
 
   return (
-    <div className="bg-white rounded-2xl p-8 border border-slate-200">
-      <h2 className="text-2xl font-bold text-slate-900 mb-6">SEO Gap Analysis</h2>
+    <div className="rounded-2xl p-8 border" style={{ backgroundColor: '#1A1A1A', borderColor: '#2A2A2A' }}>
+      <h2 className="text-2xl font-bold mb-8" style={{ color: '#FFFFFF' }}>SEO Gap Analysis</h2>
 
-      <div className="space-y-6">
+      <div className="space-y-8">
         {groupedGaps.high.length > 0 && (
           <div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
-              <span className="px-3 py-1 bg-red-600 text-white rounded-full text-sm font-bold">
+            <h3 className="text-lg font-semibold mb-4" style={{ color: '#FFFFFF' }}>
+              <span className="px-3 py-1.5 rounded-full text-sm font-bold inline-block mr-2" style={{ backgroundColor: '#EF4444', color: '#FFFFFF' }}>
                 High Priority ({groupedGaps.high.length})
               </span>
             </h3>
-            <div className="space-y-4">
-              {groupedGaps.high.map((gap, index) => {
-                const styles = getSeverityStyles('high');
-                const Icon = styles.icon;
-                return (
-                  <GapCard key={index} gap={gap} styles={styles} Icon={Icon} />
-                );
-              })}
+            <div className="space-y-3">
+              {groupedGaps.high.map((gap, index) => (
+                <GapCard key={index} gap={gap} getBadgeColor={getBadgeColor} />
+              ))}
             </div>
           </div>
         )}
 
         {groupedGaps.medium.length > 0 && (
           <div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
-              <span className="px-3 py-1 bg-amber-600 text-white rounded-full text-sm font-bold">
+            <h3 className="text-lg font-semibold mb-4" style={{ color: '#FFFFFF' }}>
+              <span className="px-3 py-1.5 rounded-full text-sm font-bold inline-block mr-2" style={{ backgroundColor: '#EAB308', color: '#000000' }}>
                 Medium Priority ({groupedGaps.medium.length})
               </span>
             </h3>
-            <div className="space-y-4">
-              {groupedGaps.medium.map((gap, index) => {
-                const styles = getSeverityStyles('medium');
-                const Icon = styles.icon;
-                return (
-                  <GapCard key={index} gap={gap} styles={styles} Icon={Icon} />
-                );
-              })}
+            <div className="space-y-3">
+              {groupedGaps.medium.map((gap, index) => (
+                <GapCard key={index} gap={gap} getBadgeColor={getBadgeColor} />
+              ))}
             </div>
           </div>
         )}
 
         {groupedGaps.low.length > 0 && (
           <div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
-              <span className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm font-bold">
+            <h3 className="text-lg font-semibold mb-4" style={{ color: '#FFFFFF' }}>
+              <span className="px-3 py-1.5 rounded-full text-sm font-bold inline-block mr-2" style={{ backgroundColor: '#3B82F6', color: '#FFFFFF' }}>
                 Low Priority ({groupedGaps.low.length})
               </span>
             </h3>
-            <div className="space-y-4">
-              {groupedGaps.low.map((gap, index) => {
-                const styles = getSeverityStyles('low');
-                const Icon = styles.icon;
-                return (
-                  <GapCard key={index} gap={gap} styles={styles} Icon={Icon} />
-                );
-              })}
+            <div className="space-y-3">
+              {groupedGaps.low.map((gap, index) => (
+                <GapCard key={index} gap={gap} getBadgeColor={getBadgeColor} />
+              ))}
             </div>
           </div>
         )}
@@ -119,27 +84,24 @@ export function GapAnalysis({ gaps }: GapAnalysisProps) {
   );
 }
 
-function GapCard({ gap, styles, Icon }: { gap: Gap; styles: any; Icon: any }) {
+function GapCard({ gap, getBadgeColor }: { gap: Gap; getBadgeColor: (severity: 'high' | 'medium' | 'low') => { bg: string; text: string } }) {
+  const badgeColors = getBadgeColor(gap.severity);
+
   return (
-    <div className={`${styles.bg} ${styles.border} border-l-4 rounded-xl p-6`}>
-      <div className="flex items-start gap-4">
-        <div className={`${styles.iconColor} flex-shrink-0 mt-1`}>
-          <Icon className="w-6 h-6" />
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <span className={`${styles.badge} px-2 py-1 rounded text-xs font-semibold uppercase`}>
-              {gap.severity}
-            </span>
-            <span className="text-sm font-semibold text-slate-600">{gap.category}</span>
-          </div>
-          <h4 className={`${styles.text} font-semibold text-lg mb-2`}>{gap.finding}</h4>
-          <p className="text-slate-700 mb-3">{gap.impact}</p>
-          <div className="bg-white rounded-lg p-4 border border-slate-200">
-            <p className="text-sm font-semibold text-slate-900 mb-1">Recommendation:</p>
-            <p className="text-slate-700">{gap.recommendation}</p>
-          </div>
-        </div>
+    <div className="rounded-lg p-6 border" style={{ backgroundColor: '#222222', borderColor: '#2A2A2A' }}>
+      <div className="flex items-start gap-3 mb-3">
+        <span className="px-2.5 py-1 rounded text-xs font-semibold uppercase flex-shrink-0" style={{ backgroundColor: badgeColors.bg, color: badgeColors.text }}>
+          {gap.severity}
+        </span>
+        <span className="text-sm font-medium" style={{ color: '#888888' }}>{gap.category}</span>
+      </div>
+      
+      <h4 className="font-semibold text-base mb-2" style={{ color: '#FFFFFF' }}>{gap.finding}</h4>
+      <p className="text-sm mb-4 leading-relaxed" style={{ color: '#CCCCCC' }}>{gap.impact}</p>
+      
+      <div className="pt-4 border-t" style={{ borderColor: '#2A2A2A' }}>
+        <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#666666' }}>Recommendation</p>
+        <p className="text-sm leading-relaxed" style={{ color: '#CCCCCC' }}>{gap.recommendation}</p>
       </div>
     </div>
   );
