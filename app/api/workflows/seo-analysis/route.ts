@@ -9,6 +9,7 @@ import {
   settlePayment,
   create402Response,
   createPaymentResponseHeader,
+  encodePaymentRequired,
 } from '@/lib/payment-verification';
 // Using x402 v2 with CDP facilitator
 
@@ -18,8 +19,11 @@ export const maxDuration = 300;
 export async function POST(request: Request) {
   try {
     // 0. PAYMENT VERIFICATION (BEFORE EVERYTHING ELSE)
-    // v2 uses 'PAYMENT-SIGNATURE' header instead of 'X-PAYMENT'
-    const paymentHeader = request.headers.get('PAYMENT-SIGNATURE');
+    // Check for both v2 ('PAYMENT-SIGNATURE') and v1 ('X-PAYMENT') headers for compatibility
+    const paymentHeaderV2 = request.headers.get('PAYMENT-SIGNATURE');
+    const paymentHeaderV1 = request.headers.get('X-PAYMENT');
+    const paymentHeader = paymentHeaderV2 || paymentHeaderV1;
+
     const requestUrl = `${new URL(request.url).origin}${new URL(request.url).pathname}`;
 
     const paymentRequirements = createPaymentRequirements(
@@ -34,9 +38,18 @@ export async function POST(request: Request) {
 
     if (!verificationResult.isValid) {
       console.log('[API] Payment required - returning 402');
+
+      // v2 protocol: Set PAYMENT-REQUIRED header with encoded payment requirements
+      const paymentRequiredHeader = encodePaymentRequired(paymentRequirements);
+
       return NextResponse.json(
         create402Response(paymentRequirements, verificationResult.error, verificationResult.payer),
-        { status: 402 }
+        {
+          status: 402,
+          headers: {
+            'PAYMENT-REQUIRED': paymentRequiredHeader,
+          }
+        }
       );
     }
 

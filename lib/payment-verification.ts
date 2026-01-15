@@ -52,6 +52,8 @@ export function createPaymentRequirements(
   const usdcAsset =
     caip2Network === 'eip155:8453' ? USDC_BASE_MAINNET : USDC_BASE_SEPOLIA;
 
+  // EIP-712 domain parameters for USDC (required for EIP-3009 signatures)
+  // Note: ExactEvmScheme expects name/version directly in 'extra', not nested
   return {
     x402Version,
     error: 'Payment required',
@@ -68,7 +70,10 @@ export function createPaymentRequirements(
         amount: usdcAmount,
         payTo,
         maxTimeoutSeconds: 300,
-        extra: {},
+        extra: {
+          name: 'USD Coin',      // EIP-712 domain name
+          version: '2',           // EIP-712 domain version
+        },
       },
     ],
   };
@@ -171,12 +176,9 @@ export function create402Response(
   error?: string,
   payer?: string
 ) {
-  return {
-    x402Version,
-    error: error || 'Payment required',
-    paymentRequirements,
-    payer,
-  };
+  // Return payment requirements directly for x402-fetch v0.7.0 compatibility
+  // x402-fetch v0.7.0 expects { x402Version, accepts } at top level
+  return paymentRequirements;
 }
 
 /**

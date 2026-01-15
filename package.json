@@ -10,9 +10,9 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.10",
-    "@coinbase/cdp-core": "^0.0.75",
-    "@coinbase/cdp-hooks": "^0.0.75",
-    "@coinbase/cdp-react": "^0.0.75",
+    "@coinbase/cdp-core": "^0.0.60",
+    "@coinbase/cdp-hooks": "^0.0.60",
+    "@coinbase/cdp-react": "^0.0.60",
     "@coinbase/x402": "^2.1.0",
     "@vercel/analytics": "^1.6.1",
     "@vercel/blob": "^2.0.0",

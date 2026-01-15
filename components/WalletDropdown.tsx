@@ -15,8 +15,8 @@ export function WalletDropdown() {
   const { currentUser } = useCurrentUser();
   const { signOut } = useSignOut();
 
-  // Get EOA (Externally Owned Account) - this is the address that makes payments
-  const evmAddress = currentUser?.evmAccounts?.[0];
+  // Get Smart Wallet (ERC-4337) - this is the address that makes payments
+  const evmAddress = currentUser?.evmSmartAccounts?.[0];
   const [balance, setBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
