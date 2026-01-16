@@ -9,7 +9,7 @@ export function Header() {
   const { isSignedIn } = useIsSignedIn();
 
   return (
-    <header className="relative py-4 px-6 border-b" style={{ borderColor: '#2A2A2A', backgroundColor: '#1A1A1A' }}>
+    <header className="relative py-4 px-6 border-b" style={{ borderColor: 'transparent', backgroundColor: 'transparent' }}>
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="inline-flex items-center gap-3 group">

@@ -43,7 +43,7 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
   ]);
   const [reportData, setReportData] = useState<StructuredReportData | null>(null);
   const [reportHtml, setReportHtml] = useState<string | null>(null);
-  const [score, setScore] = useState<number | null>(null);
+  const [googleRanking, setGoogleRanking] = useState<number | null>(null);
   const [userUrl, setUserUrl] = useState(initialData.userUrl);
   const [currentSubStep, setCurrentSubStep] = useState<string | undefined>();
   const [showSteps, setShowSteps] = useState(false);
@@ -62,7 +62,7 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
           } else if (data.reportHtml) {
             setReportHtml(data.reportHtml);
           }
-          setScore(data.score);
+          setGoogleRanking(data.googleRanking);
         })
         .catch(err => console.error('Failed to fetch report:', err));
     }
@@ -82,7 +82,7 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
         setStatus(data.status);
         setProgress(data.progress);
         setUserUrl(data.userUrl);
-        setScore(data.score);
+        setGoogleRanking(data.googleRanking);
 
         // Update step statuses and track durations
         setSteps(prev => {
@@ -264,10 +264,12 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
                   <p className="text-2xl font-bold" style={{ color: '#FFFFFF' }}>{(totalDuration / 1000).toFixed(0)}s</p>
                 </div>
               )}
-              {score !== null && (
+              {googleRanking !== undefined && googleRanking !== null && (
                 <div>
-                  <p className="text-xs uppercase tracking-wider mb-1" style={{ color: '#666666' }}>SEO Score</p>
-                  <p className="text-2xl font-bold" style={{ color: '#FFFFFF' }}>{score}/100</p>
+                  <p className="text-xs uppercase tracking-wider mb-1" style={{ color: '#666666' }}>Google Ranking</p>
+                  <p className="text-2xl font-bold" style={{ color: '#FFFFFF' }}>
+                    {googleRanking > 0 ? `#${googleRanking}` : 'Not in top 100'}
+                  </p>
                 </div>
               )}
             </div>
@@ -311,7 +313,6 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
                 <DownloadReportButton
                   reportData={reportData}
                   userUrl={userUrl}
-                  score={score || 0}
                   runId={runId}
                 />
               )}

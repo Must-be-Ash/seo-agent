@@ -6,11 +6,10 @@ import type { StructuredReportData } from '@/types/report-data';
 interface DownloadReportButtonProps {
   reportData: StructuredReportData;
   userUrl: string;
-  score: number;
   runId: string;
 }
 
-export function DownloadReportButton({ reportData, userUrl, score, runId }: DownloadReportButtonProps) {
+export function DownloadReportButton({ reportData, userUrl, runId }: DownloadReportButtonProps) {
   const handlePrint = () => {
     window.print();
   };

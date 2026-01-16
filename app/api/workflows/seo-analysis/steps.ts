@@ -218,6 +218,53 @@ Return as JSON array:
 }
 
 /**
+ * Step 3b: Detect Google Ranking Position for Target Keyword
+ * Searches Google for the target keyword and finds user's ranking position
+ */
+export async function detectGoogleRanking(
+  targetKeyword: string,
+  userUrl: string
+): Promise<{ rank: number | null; foundUrl: string | null }> {
+  console.log(`[Step 3b] Checking Google ranking for: "${targetKeyword}"`);
+
+  try {
+    const fetchFunc = createX402Fetch();
+
+    // Search for top 100 results (10 pages x 10 results)
+    const allResults: Array<{ title: string; url: string; description: string }> = [];
+
+    for (let page = 1; page <= 10; page++) {
+      const pageResults = await searchWeb(targetKeyword, page, fetchFunc);
+      allResults.push(...pageResults);
+
+      // Early exit if we found the user's domain
+      const userDomain = new URL(userUrl).hostname.replace('www.', '');
+      const foundInPage = pageResults.find(result => {
+        try {
+          const resultDomain = new URL(result.url).hostname.replace('www.', '');
+          return resultDomain === userDomain;
+        } catch {
+          return false;
+        }
+      });
+
+      if (foundInPage) {
+        const rank = allResults.indexOf(foundInPage) + 1;
+        console.log(`[Step 3b] ✓ Found at position ${rank}: ${foundInPage.url}`);
+        return { rank, foundUrl: foundInPage.url };
+      }
+    }
+
+    console.log(`[Step 3b] Not found in top 100 results`);
+    return { rank: null, foundUrl: null };
+
+  } catch (error) {
+    console.error('[Step 3b] Error detecting ranking:', error);
+    return { rank: null, foundUrl: null };
+  }
+}
+
+/**
  * Step 4: Fetch All Competitor Pages
  * Extracts SEO data from competitor pages in parallel
  */
@@ -550,7 +597,8 @@ export async function generateReportData(
     patterns: any;
     gaps: Array<any>;
     recommendations: any;
-    score: number;
+    googleRanking?: number | null;
+    googleRankingUrl?: string | null;
     competitorData?: Array<any>;
   }
 ): Promise<StructuredReportData> {
@@ -566,24 +614,29 @@ export async function generateReportData(
   const mediumGaps = reportData.gaps.filter((g: any) => g.severity === 'medium');
   const mainGapCategories = [...new Set(highGaps.map((g: any) => g.category))].slice(0, 3);
   
-  const overviewPrompt = `Create a concise, professional executive summary (2-3 sentences) for this SEO gap analysis report:
+  const overviewPrompt = `Create a concise, professional executive summary (2-3 sentences) for this SEO competitive analysis report:
 
 Website: ${reportData.userSiteData.title || reportData.userSiteData.url}
 URL: ${reportData.userSiteData.url}
-Primary Keyword: "${reportData.discoveredKeywords.primary}"
-SEO Score: ${reportData.score}/100
+Target Keyword: "${reportData.discoveredKeywords.primary}" (user wants to rank for this)
+${reportData.googleRanking
+  ? `Current Google Ranking: Position #${reportData.googleRanking}`
+  : 'Current Google Ranking: Not found in top 100 results'}
+
 Key Issues: ${highGaps.length} critical/high-priority gaps, ${mediumGaps.length} medium-priority gaps
 Main Gap Categories: ${mainGapCategories.join(', ')}
 
-Your Site Metrics:
+Your Site Metrics vs Competitors:
 - ${reportData.userSiteData.wordCount} words (vs ${reportData.patterns.avgWordCount} competitor avg)
 - ${reportData.userSiteData.h2.length} H2s (vs ${reportData.patterns.avgH2Count} competitor avg)
 
 Write a summary that:
-1. States the SEO score and whether it's poor (<40), fair (40-60), good (60-80), or excellent (80+)
-2. Mentions the primary keyword being targeted: "${reportData.discoveredKeywords.primary}"
+1. States the current Google ranking position prominently (or "not ranking in top 100")
+2. Mentions they're targeting "${reportData.discoveredKeywords.primary}"
 3. Highlights the most critical gap that needs immediate attention
 4. Sets a positive, actionable tone about improvement potential
+
+DO NOT mention any 0-100 score. Focus on the actual Google ranking position.
 
 Return only the summary text (2-3 sentences), no markdown, no quotes.`;
 
@@ -791,7 +844,8 @@ Return only the summary text (2-3 sentences), no markdown, no quotes.`;
     executiveSummary: {
       overview,
       keyFindings,
-      score: reportData.score,
+      googleRanking: reportData.googleRanking,
+      googleRankingUrl: reportData.googleRankingUrl,
     },
     yourMetrics: {
       wordCount: reportData.userSiteData.wordCount,

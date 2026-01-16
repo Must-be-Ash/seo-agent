@@ -3,7 +3,9 @@ export interface StructuredReportData {
   executiveSummary: {
     overview: string;
     keyFindings: string[];
-    score: number;
+    googleRanking?: number | null; // Position in Google results (1-100+)
+    googleRankingUrl?: string | null; // The specific URL that's ranking
+    score?: number; // DEPRECATED - kept for backwards compatibility
   };
   yourMetrics: {
     wordCount: number;

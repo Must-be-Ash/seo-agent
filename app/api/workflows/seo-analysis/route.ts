@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { url, userId } = body;
+    const { url, userId, targetKeyword } = body;
 
     // 2. INPUT VALIDATION
     if (!url || typeof url !== 'string' || url.length < 5 || url.length > 500) {
@@ -87,6 +87,20 @@ export async function POST(request: Request) {
     if (!userId || typeof userId !== 'string') {
       return NextResponse.json(
         { error: 'User ID required' },
+        { status: 400 }
+      );
+    }
+
+    if (!targetKeyword || typeof targetKeyword !== 'string') {
+      return NextResponse.json(
+        { error: 'Target keyword is required' },
+        { status: 400 }
+      );
+    }
+
+    if (targetKeyword.trim().length < 2 || targetKeyword.trim().length > 100) {
+      return NextResponse.json(
+        { error: 'Keyword must be 2-100 characters' },
         { status: 400 }
       );
     }
@@ -119,6 +133,7 @@ export async function POST(request: Request) {
       runId,
       userId,
       userUrl: sanitizedUrl,
+      targetKeyword: targetKeyword.trim(),
       createdAt: new Date(),
       status: 'analyzing',
     });
@@ -128,6 +143,7 @@ export async function POST(request: Request) {
     const run = await start(seoAnalysisWorkflow, [{
       runId,
       url: sanitizedUrl,
+      targetKeyword: targetKeyword.trim(),
     }]);
 
     console.log('[API] ✓ Workflow started:', run.runId);

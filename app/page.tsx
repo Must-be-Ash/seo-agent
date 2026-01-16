@@ -12,10 +12,12 @@ import { createWalletClient, http, publicActions } from 'viem';
 import { base } from 'viem/chains';
 import { COST_CONFIG } from '@/lib/config';
 import { validateUrl, normalizeUrl } from '@/lib/validation';
+import { AsciiBackground } from '@/components/AsciiBackground';
 
 
 export default function Home() {
   const [url, setUrl] = useState('');
+  const [keyword, setKeyword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
@@ -90,6 +92,11 @@ export default function Home() {
       return;
     }
 
+    if (!keyword.trim()) {
+      setError('Please enter a target keyword');
+      return;
+    }
+
     if (!isSignedIn) {
       setError('Please sign in to continue');
       setTimeout(() => {
@@ -119,14 +126,30 @@ export default function Home() {
         body: JSON.stringify({
           url: normalizedUrl,
           userId: 'user-placeholder',
+          targetKeyword: keyword.trim(),
         }),
       });
 
       console.log('[Workflow] Response status:', response.status);
 
       if (response.status === 402) {
-        console.warn('[Payment] Payment required (402), x402-fetch will handle automatically');
-        return;
+        console.warn('[Payment] Payment required (402)');
+
+        // Parse 402 response to check for insufficient funds
+        try {
+          const data = await response.json();
+          if (data.invalidReason === 'insufficient_funds') {
+            throw new Error(`Insufficient USDC balance. You need at least $${COST_CONFIG.seoAnalysis} USDC on Base network. Please add funds and try again.`);
+          } else {
+            throw new Error(`Payment failed. Please ensure you have sufficient USDC balance ($${COST_CONFIG.seoAnalysis}) on Base network.`);
+          }
+        } catch (parseError) {
+          // If we can't parse the response, show generic payment error
+          if (parseError instanceof Error && parseError.message.includes('USDC')) {
+            throw parseError; // Re-throw our custom error
+          }
+          throw new Error(`Payment failed. Please ensure you have sufficient USDC balance ($${COST_CONFIG.seoAnalysis}) on Base network.`);
+        }
       }
 
       if (!response.ok) {
@@ -161,12 +184,13 @@ export default function Home() {
   };
 
   return (
-    <div className="flex items-center justify-center" style={{ backgroundColor: '#222222', minHeight: 'calc(100vh - 70px)', paddingBottom: '80px' }}>
+    <div className="flex items-center justify-center" style={{ backgroundColor: '#212121', minHeight: '100vh', paddingBottom: '80px' }}>
+      <AsciiBackground />
       <main className="w-full">
         {/* Hero Section */}
         <section className="max-w-6xl mx-auto px-6 w-full">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4" style={{ backgroundColor: '#1A1A1A', border: '1px solid #2A2A2A' }}>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4" style={{ backgroundColor: '#1A1A1A', border: '1px solid #2A2A2A', position: 'relative', zIndex: 10 }}>
               <Sparkles className="w-4 h-4" style={{ color: '#888888' }} />
               <span className="text-sm font-medium" style={{ color: '#CCCCCC' }}>AI-Powered SEO Analysis</span>
             </div>
@@ -205,8 +229,34 @@ export default function Home() {
                     backgroundColor: '#1A1A1A',
                     borderColor: focused ? '#444444' : (error ? '#EF4444' : '#2A2A2A'),
                     color: '#FFFFFF',
+                    position: 'relative',
+                    zIndex: 10,
                   }}
                 />
+              </div>
+
+              <div className="relative">
+                <input
+                  type="text"
+                  value={keyword}
+                  onChange={(e) => {
+                    setKeyword(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder="Enter target keyword (e.g., graphic design software)"
+                  disabled={loading}
+                  className="w-full px-6 py-5 text-lg rounded-xl border-2 transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    backgroundColor: '#1A1A1A',
+                    borderColor: '#2A2A2A',
+                    color: '#FFFFFF',
+                    position: 'relative',
+                    zIndex: 10,
+                  }}
+                />
+                <p className="text-xs mt-2 px-2" style={{ color: '#888888' }}>
+                  The keyword you want to rank for on Google
+                </p>
               </div>
 
               {error && (
@@ -217,19 +267,20 @@ export default function Home() {
 
               <button
                 type="submit"
-                disabled={loading || !url.trim()}
-                className="w-full py-5 px-6 rounded-xl font-semibold text-lg transition-all flex items-center justify-center gap-3 group disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden"
+                disabled={loading || !url.trim() || !keyword.trim()}
+                className="w-full py-5 px-6 rounded-xl font-semibold text-lg transition-all flex items-center justify-center gap-3 group disabled:cursor-not-allowed relative overflow-hidden"
                 style={{
-                  backgroundColor: '#FFFFFF',
+                  backgroundColor: (loading || !url.trim() || !keyword.trim()) ? '#CCCCCC' : '#FFFFFF',
                   color: '#000000',
+                  zIndex: 10,
                 }}
                 onMouseEnter={(e) => {
-                  if (!loading && url.trim()) {
+                  if (!loading && url.trim() && keyword.trim()) {
                     e.currentTarget.style.backgroundColor = '#F5F5F5';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!loading && url.trim()) {
+                  if (!loading && url.trim() && keyword.trim()) {
                     e.currentTarget.style.backgroundColor = '#FFFFFF';
                   }
                 }}
@@ -247,7 +298,7 @@ export default function Home() {
               </button>
 
               <p className="text-center text-sm" style={{ color: '#999999' }}>
-                Powered by Hyperbrowser • ${COST_CONFIG.seoAnalysis} USDC per analysis
+                Powered by Hyperbrowser • ${COST_CONFIG.seoAnalysis} USDC per keyword analysis
               </p>
             </form>
           </div>

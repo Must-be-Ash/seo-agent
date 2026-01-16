@@ -19,7 +19,9 @@ export function SEOReport({ data }: SEOReportProps) {
       <ExecutiveSummary
         overview={data.executiveSummary.overview}
         keyFindings={data.executiveSummary.keyFindings}
-        score={data.executiveSummary.score}
+        googleRanking={data.executiveSummary.googleRanking}
+        googleRankingUrl={data.executiveSummary.googleRankingUrl}
+        targetKeyword={data.keywords.primary}
       />
 
       <KeywordsSection keywords={data.keywords} />

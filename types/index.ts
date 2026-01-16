@@ -5,8 +5,13 @@ export interface SEOReport {
   runId: string; // Unique workflow run ID
   userId: string; // Wallet address
   userUrl: string; // Website URL analyzed
+  targetKeyword?: string; // User-provided target keyword
   createdAt: Date;
   status: 'analyzing' | 'completed' | 'failed';
+
+  // Google ranking data
+  googleRanking?: number | null; // Position in Google results (1-100+)
+  googleRankingUrl?: string | null; // The specific URL that's ranking
 
   // Step 1: User site data
   userSiteData?: {
@@ -82,7 +87,7 @@ export interface SEOReport {
   reportData?: any; // StructuredReportData from @/types/report-data
   reportHtml?: string; // Deprecated - kept for backward compatibility
 
-  // Overall score
+  // Overall score (DEPRECATED - kept for backwards compatibility)
   score?: number; // 0-100
 
   // Payment tracking

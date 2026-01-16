@@ -56,14 +56,14 @@ export function NavDock({ rightContent }: NavDockProps = {}) {
 
   return (
     <>
-      <header className={`bg-background/80 backdrop-blur-sm sticky top-0 z-40 transition-all duration-200 ${isScrolled ? 'py-0' : ''}`}>
+      <header className={`fixed top-0 left-0 right-0 z-40 transition-all duration-200 ${isScrolled ? 'py-0' : ''}`} style={{ backgroundColor: 'transparent', pointerEvents: 'none' }}>
         <div className={`container mx-auto px-4 transition-all duration-200 ${isScrolled ? 'py-2 sm:py-3' : 'py-3'}`}>
-          <div className="flex items-center justify-end">
+          <div className="flex items-center justify-end" style={{ pointerEvents: 'auto' }}>
           {/* Navigation Dock + Optional Right Content */}
           <div className="flex items-center gap-3">
             <nav className="flex items-center">
               <LayoutGroup id="nav-dock">
-                <div className={`relative flex items-center gap-1 rounded-full bg-muted/50 border border-border/50 transition-all duration-200 ${containerPadding}`}>
+                <div className={`relative flex items-center gap-1 rounded-full border transition-all duration-200 ${containerPadding}`} style={{ backgroundColor: 'rgba(42, 42, 42, 0.6)', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
                   {navItems.map((item) => {
                     const Icon = item.icon;
                     return (
