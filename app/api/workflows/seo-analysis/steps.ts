@@ -291,7 +291,6 @@ export async function identifyGaps(
   const prompt = `You are an SEO consultant. Analyze this website against competitor benchmarks and identify ALL significant SEO gaps.
 
 USER SITE:
-- URL: ${userSite.url}
 - Title: ${userSite.title}
 - Meta Description: ${userSite.metaDescription}
 - Word Count: ${userSite.wordCount}

@@ -2,10 +2,11 @@
 
 interface Gap {
   category: string;
-  severity: 'high' | 'medium' | 'low';
+  severity: 'critical' | 'high' | 'medium' | 'low';
   finding: string;
   impact: string;
   recommendation: string;
+  estimatedEffort?: string;
 }
 
 interface GapAnalysisProps {
@@ -13,8 +14,10 @@ interface GapAnalysisProps {
 }
 
 export function GapAnalysis({ gaps }: GapAnalysisProps) {
-  const getBadgeColor = (severity: 'high' | 'medium' | 'low') => {
+  const getBadgeColor = (severity: 'critical' | 'high' | 'medium' | 'low') => {
     switch (severity) {
+      case 'critical':
+        return { bg: '#DC2626', text: '#FFFFFF' };
       case 'high':
         return { bg: '#EF4444', text: '#FFFFFF' };
       case 'medium':
@@ -25,6 +28,7 @@ export function GapAnalysis({ gaps }: GapAnalysisProps) {
   };
 
   const groupedGaps = {
+    critical: gaps.filter(g => g.severity === 'critical'),
     high: gaps.filter(g => g.severity === 'high'),
     medium: gaps.filter(g => g.severity === 'medium'),
     low: gaps.filter(g => g.severity === 'low'),
@@ -35,6 +39,21 @@ export function GapAnalysis({ gaps }: GapAnalysisProps) {
       <h2 className="text-2xl font-bold mb-8" style={{ color: '#FFFFFF' }}>SEO Gap Analysis</h2>
 
       <div className="space-y-8">
+        {groupedGaps.critical.length > 0 && (
+          <div>
+            <h3 className="text-lg font-semibold mb-4" style={{ color: '#FFFFFF' }}>
+              <span className="px-3 py-1.5 rounded-full text-sm font-bold inline-block mr-2" style={{ backgroundColor: '#DC2626', color: '#FFFFFF' }}>
+                Critical ({groupedGaps.critical.length})
+              </span>
+            </h3>
+            <div className="space-y-3">
+              {groupedGaps.critical.map((gap, index) => (
+                <GapCard key={index} gap={gap} getBadgeColor={getBadgeColor} />
+              ))}
+            </div>
+          </div>
+        )}
+
         {groupedGaps.high.length > 0 && (
           <div>
             <h3 className="text-lg font-semibold mb-4" style={{ color: '#FFFFFF' }}>
@@ -84,7 +103,7 @@ export function GapAnalysis({ gaps }: GapAnalysisProps) {
   );
 }
 
-function GapCard({ gap, getBadgeColor }: { gap: Gap; getBadgeColor: (severity: 'high' | 'medium' | 'low') => { bg: string; text: string } }) {
+function GapCard({ gap, getBadgeColor }: { gap: Gap; getBadgeColor: (severity: 'critical' | 'high' | 'medium' | 'low') => { bg: string; text: string } }) {
   const badgeColors = getBadgeColor(gap.severity);
 
   return (
@@ -94,11 +113,16 @@ function GapCard({ gap, getBadgeColor }: { gap: Gap; getBadgeColor: (severity: '
           {gap.severity}
         </span>
         <span className="text-sm font-medium" style={{ color: '#888888' }}>{gap.category}</span>
+        {gap.estimatedEffort && (
+          <span className="ml-auto text-xs px-2 py-1 rounded" style={{ backgroundColor: '#2A2A2A', color: '#888888' }}>
+            {gap.estimatedEffort}
+          </span>
+        )}
       </div>
-      
+
       <h4 className="font-semibold text-base mb-2" style={{ color: '#FFFFFF' }}>{gap.finding}</h4>
       <p className="text-sm mb-4 leading-relaxed" style={{ color: '#CCCCCC' }}>{gap.impact}</p>
-      
+
       <div className="pt-4 border-t" style={{ borderColor: '#2A2A2A' }}>
         <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#666666' }}>Recommendation</p>
         <p className="text-sm leading-relaxed" style={{ color: '#CCCCCC' }}>{gap.recommendation}</p>
