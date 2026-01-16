@@ -30,7 +30,7 @@ async function analyzeReports() {
     const collection = db.collection(COLLECTION_NAME);
 
     // Fetch the two specific reports
-    const reportIds = ['seo_1768537310014_sov0hhe2f', 'seo_1768537623438_syyxz3awj'];
+    const reportIds = ['seo_1768592310206_o6hm5eln4'];
 
     for (const runId of reportIds) {
       console.log(`\n${'='.repeat(80)}`);

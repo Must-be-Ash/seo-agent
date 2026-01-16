@@ -38,11 +38,11 @@ async function discoverKeywordsStep(userSiteData: SEOData, runId: string) {
   return discoveredKeywords;
 }
 
-async function searchCompetitorsStep(primaryKeyword: string, runId: string) {
+async function searchCompetitorsStep(primaryKeyword: string, userSiteData: SEOData, runId: string) {
   "use step";
 
-  console.log('[Workflow] Step 3: Searching for competitors');
-  const searchResults = await steps.searchCompetitors(primaryKeyword);
+  console.log('[Workflow] Step 3: Identifying competitor companies');
+  const searchResults = await steps.searchCompetitors(primaryKeyword, userSiteData);
 
   return searchResults;
 }
@@ -296,8 +296,8 @@ export const seoAnalysisWorkflow = async (input: { url: string; runId: string })
   // Step 2: Discover keywords from user site
   const discoveredKeywords = await discoverKeywordsStep(userSiteData, runId);
 
-  // Step 3: Search for competitors
-  const searchResults = await searchCompetitorsStep(discoveredKeywords.primary, runId);
+  // Step 3: Identify competitor companies (not blog posts)
+  const searchResults = await searchCompetitorsStep(discoveredKeywords.primary, userSiteData, runId);
 
   // Step 4: Fetch competitor pages (filter out user's own domain)
   const competitorData = await fetchCompetitorDataStep(searchResults, discoveredKeywords.primary, url, runId);

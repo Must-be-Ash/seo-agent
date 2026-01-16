@@ -104,25 +104,117 @@ Return GENERIC category keywords (no brand names) as JSON:
 }
 
 /**
- * Step 3: Search for Competitors
- * Searches for top-ranking pages for the primary keyword
+ * Step 3: Identify Competitor Companies with LLM
+ * Uses LLM to identify actual competitor companies, then finds their product URLs
  */
 export async function searchCompetitors(
-  keyword: string
+  keyword: string,
+  userSiteData: SEOData
 ): Promise<Array<{ rank: number; title: string; url: string; description: string }>> {
-  console.log(`[Step 3] Searching for competitors: "${keyword}"`);
+  console.log(`[Step 3] Identifying competitor companies for: "${keyword}"`);
 
+  // Step 3a: Ask LLM to identify competitor companies
+  const prompt = `You are analyzing a website in the "${keyword}" category.
+
+Website Title: ${userSiteData.title}
+Website Content Preview: ${userSiteData.content.substring(0, 500)}
+
+Identify 8-10 DIRECT COMPETITOR COMPANIES (not blog posts or review sites) that offer similar products/services in this category.
+
+Requirements:
+- Must be actual product/service providers, NOT review sites, blogs, or comparison sites
+- Must be direct competitors offering similar solutions
+- Include well-known established players AND emerging competitors
+- Return their most likely main product page URL (usually their homepage or main product page)
+
+Examples of GOOD competitors:
+- For Canva → Figma (figma.com), Adobe Express (adobe.com/express), Vistacreate (create.vista.com)
+- For Stripe → PayPal, Square, Adyen
+- For Notion → Coda, ClickUp, Monday.com
+
+Examples of BAD competitors (DO NOT INCLUDE):
+- PCMag, TechRadar, Lifewire (review sites)
+- Blog posts about the topic
+- "Best [keyword]" listicles
+
+For each competitor, provide:
+- company: Company name
+- url: Their main product URL (use .com domain, or specific product page if known)
+- description: Brief 1-sentence description of what they offer
+
+Return as JSON array:
+{
+  "competitors": [
+    {
+      "company": "Company Name",
+      "url": "https://company.com",
+      "description": "Brief description of their product/service"
+    }
+  ]
+}`;
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages: [
+      {
+        role: 'system',
+        content: 'You are a competitive analysis expert. Identify actual competitor companies, not review sites or blogs. Respond with valid JSON only.'
+      },
+      {
+        role: 'user',
+        content: prompt
+      }
+    ],
+    response_format: { type: 'json_object' },
+    temperature: 0.3,
+  });
+
+  const result = JSON.parse(response.choices[0].message.content || '{ "competitors": [] }');
+
+  // Step 3b: For each competitor, verify URL is accessible or search for it
   const fetchFunc = createX402Fetch();
-  const results = await searchWeb(keyword, 1, fetchFunc);
+  const verifiedCompetitors: Array<{ rank: number; title: string; url: string; description: string }> = [];
 
-  // Take top 10 and add rank
-  const rankedResults = results.slice(0, 10).map((result, index) => ({
-    rank: index + 1,
-    ...result,
-  }));
+  for (let i = 0; i < Math.min(result.competitors.length, 10); i++) {
+    const comp = result.competitors[i];
+    let finalUrl = comp.url;
+    let title = comp.company;
+    let description = comp.description;
 
-  console.log(`[Step 3] ✓ Found ${rankedResults.length} competitor pages`);
-  return rankedResults;
+    // If URL doesn't start with http, add https://
+    if (!finalUrl.startsWith('http')) {
+      finalUrl = `https://${finalUrl}`;
+    }
+
+    // Try to search for the company's official site if URL seems suspicious
+    if (!finalUrl.includes('.com') && !finalUrl.includes('.io') && !finalUrl.includes('.ai')) {
+      console.log(`[Step 3] Searching for official site: ${comp.company}`);
+      try {
+        const searchResults = await searchWeb(`${comp.company} official site`, 1, fetchFunc);
+        if (searchResults.length > 0) {
+          finalUrl = searchResults[0].url;
+          title = searchResults[0].title;
+          description = searchResults[0].description;
+        }
+      } catch (error) {
+        console.warn(`[Step 3] Could not find URL for ${comp.company}, using LLM suggestion`);
+      }
+    }
+
+    verifiedCompetitors.push({
+      rank: i + 1,
+      title: title,
+      url: finalUrl,
+      description: description,
+    });
+  }
+
+  console.log(`[Step 3] ✓ Identified ${verifiedCompetitors.length} competitor companies`);
+  verifiedCompetitors.forEach((c, i) => {
+    console.log(`  ${i + 1}. ${c.title} - ${c.url}`);
+  });
+
+  return verifiedCompetitors;
 }
 
 /**
