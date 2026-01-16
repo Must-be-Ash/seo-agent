@@ -11,7 +11,7 @@ import { ExactEvmScheme } from '@x402/evm';
 import { createWalletClient, http, publicActions } from 'viem';
 import { base } from 'viem/chains';
 import { COST_CONFIG } from '@/lib/config';
-import { validateUrl } from '@/lib/validation';
+import { validateUrl, normalizeUrl } from '@/lib/validation';
 
 
 export default function Home() {
@@ -107,14 +107,17 @@ export default function Home() {
     setLoading(true);
 
     try {
-      console.log('[SEO Analysis] Starting analysis for:', url);
+      // Normalize the URL (add https:// if missing)
+      const normalizedUrl = normalizeUrl(url);
+
+      console.log('[SEO Analysis] Starting analysis for:', normalizedUrl);
       console.log('[Payment] Using x402-wrapped fetch for payment handling');
 
       const response = await paymentFetch('/api/workflows/seo-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          url,
+          url: normalizedUrl,
           userId: 'user-placeholder',
         }),
       });
@@ -195,7 +198,7 @@ export default function Home() {
                   }}
                   onFocus={() => setFocused(true)}
                   onBlur={() => setFocused(false)}
-                  placeholder="Enter your website URL (e.g., https://example.com)"
+                  placeholder="Enter your website URL (e.g., example.com)"
                   disabled={loading}
                   className="w-full pl-16 pr-6 py-5 text-lg rounded-xl border-2 transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{

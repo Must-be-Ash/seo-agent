@@ -56,16 +56,19 @@ Title: ${siteData.title}
 Meta Description: ${siteData.metaDescription}
 H1 Tags: ${siteData.h1.join(', ')}
 H2 Tags: ${siteData.h2.slice(0, 10).join(', ')}
-Main Content Preview: ${siteData.content.substring(0, 1000)}
+Main Content Preview: ${siteData.content.substring(0, 2000)}
 
 Based on this content, identify:
-1. ONE primary keyword (2-5 words) that best represents the main topic
-2. 2-4 secondary keywords (2-5 words each) that are closely related
+1. ONE primary keyword (2-5 words) that best represents the main topic and has commercial intent
+2. 3-5 secondary keywords (2-5 words each) that are closely related and should be targeted
+3. Keyword intent: "informational", "commercial", "transactional", or "navigational"
 
 Return as JSON:
 {
   "primary": "main keyword here",
-  "secondary": ["keyword 1", "keyword 2", "keyword 3"]
+  "secondary": ["keyword 1", "keyword 2", "keyword 3", "keyword 4"],
+  "intent": "commercial",
+  "reasoning": "Brief explanation of why these keywords were chosen"
 }`;
 
   const response = await openai.chat.completions.create({
@@ -277,36 +280,42 @@ export async function identifyGaps(
   competitors: Array<any>
 ): Promise<Array<{
   category: string;
-  severity: 'high' | 'medium' | 'low';
+  severity: 'critical' | 'high' | 'medium' | 'low';
   finding: string;
   impact: string;
   recommendation: string;
+  estimatedEffort?: string;
 }>> {
   console.log('[Step 6] Identifying SEO gaps');
 
-  const prompt = `You are an SEO consultant. Analyze this website against competitor benchmarks and identify specific SEO gaps.
+  const prompt = `You are an SEO consultant. Analyze this website against competitor benchmarks and identify ALL significant SEO gaps.
 
 USER SITE:
+- URL: ${userSite.url}
+- Title: ${userSite.title}
+- Meta Description: ${userSite.metaDescription}
 - Word Count: ${userSite.wordCount}
-- H2 Count: ${userSite.h2.length}
+- H1: ${userSite.h1.join(', ')}
+- H2 Count: ${userSite.h2.length} (${userSite.h2.slice(0, 5).join(', ')})
 - H3 Count: ${userSite.h3.length}
 - Internal Links: ${userSite.internalLinks}
 - Has Schema Markup: ${userSite.hasSchema}
-- H2 Topics: ${userSite.h2.join(', ')}
 
 COMPETITOR BENCHMARKS:
 - Avg Word Count: ${patterns.avgWordCount}
 - Avg H2 Count: ${patterns.avgH2Count}
 - Avg H3 Count: ${patterns.avgH3Count}
+- Avg Internal Links: ${patterns.avgInternalLinks}
 - Common Topics: ${patterns.commonTopics.join(', ')}
 - Schema Usage: ${patterns.technicalPatterns.schemaUsage}/${patterns.technicalPatterns.totalCompetitors} have schema
 
-Identify 5-8 specific SEO gaps. For each gap, provide:
-- category: (e.g., "Content Depth", "Content Structure", "Technical SEO", "Topic Coverage")
-- severity: "high", "medium", or "low"
-- finding: Clear description of the gap
-- impact: Why this matters for SEO
-- recommendation: Specific action to fix it
+Identify ALL significant SEO gaps (typically 4-10). For each gap:
+- category: e.g., "Content Depth", "Content Structure", "Technical SEO", "Topic Coverage", "On-Page Optimization"
+- severity: "critical" (major ranking factor), "high" (significant impact), "medium" (moderate impact), or "low" (minor improvement)
+- finding: Specific, data-driven description with metrics
+- impact: Quantify the ranking/traffic impact (e.g., "Could improve rankings by 15-20%")
+- recommendation: Specific, actionable fix with target metrics
+- estimatedEffort: "Quick win (<1 week)", "Medium (1-4 weeks)", or "Long-term (1+ months)"
 
 Return as JSON:
 {
@@ -314,9 +323,10 @@ Return as JSON:
     {
       "category": "Content Depth",
       "severity": "high",
-      "finding": "Your page has 1,200 words vs 2,800 average",
-      "impact": "Lower content depth signals lower authority to search engines",
-      "recommendation": "Add 1,600 more words covering: [specific topics]"
+      "finding": "Your page has ${userSite.wordCount} words vs ${patterns.avgWordCount} average",
+      "impact": "Content depth is a top 3 ranking factor. Sites with 2,500+ words rank 20% higher on average.",
+      "recommendation": "Add ${Math.max(0, patterns.avgWordCount - userSite.wordCount)} more words covering: ${patterns.commonTopics.slice(0, 3).join(', ')}",
+      "estimatedEffort": "Medium (1-4 weeks)"
     }
   ]
 }`;
@@ -449,18 +459,24 @@ export async function generateReportData(
   
   const overviewPrompt = `Create a concise, professional executive summary (2-3 sentences) for this SEO gap analysis report:
 
-Website: ${reportData.userSiteData.title || reportData.userSiteData.url || 'The analyzed website'}
-SEO Score: ${reportData.score}/100
+Website: ${reportData.userSiteData.title || reportData.userSiteData.url}
+URL: ${reportData.userSiteData.url}
 Primary Keyword: "${reportData.discoveredKeywords.primary}"
-Key Issues Found: ${highGaps.length} high-priority gaps, ${mediumGaps.length} medium-priority gaps
+SEO Score: ${reportData.score}/100
+Key Issues: ${highGaps.length} critical/high-priority gaps, ${mediumGaps.length} medium-priority gaps
 Main Gap Categories: ${mainGapCategories.join(', ')}
 
-Write a summary that:
-- Mentions the SEO score and what it indicates
-- Highlights the most critical gap (${highGaps[0]?.category || 'content quality'})
-- Sets expectations for what the report covers
+Your Site Metrics:
+- ${reportData.userSiteData.wordCount} words (vs ${reportData.patterns.avgWordCount} competitor avg)
+- ${reportData.userSiteData.h2.length} H2s (vs ${reportData.patterns.avgH2Count} competitor avg)
 
-Return only the summary text, no markdown, no formatting, no quotes.`;
+Write a summary that:
+1. States the SEO score and whether it's poor (<40), fair (40-60), good (60-80), or excellent (80+)
+2. Mentions the primary keyword being targeted: "${reportData.discoveredKeywords.primary}"
+3. Highlights the most critical gap that needs immediate attention
+4. Sets a positive, actionable tone about improvement potential
+
+Return only the summary text (2-3 sentences), no markdown, no quotes.`;
 
   const overviewResponse = await openai.chat.completions.create({
     model: 'gpt-4o-mini',

@@ -2,6 +2,7 @@
 
 import type { StructuredReportData } from '@/types/report-data';
 import { ExecutiveSummary } from './ExecutiveSummary';
+import { KeywordsSection } from './KeywordsSection';
 import { MetricsComparison } from './MetricsComparison';
 import { CompetitorList } from './CompetitorList';
 import { GapAnalysis } from './GapAnalysis';
@@ -20,6 +21,8 @@ export function SEOReport({ data }: SEOReportProps) {
         keyFindings={data.executiveSummary.keyFindings}
         score={data.executiveSummary.score}
       />
+
+      <KeywordsSection keywords={data.keywords} />
 
       <MetricsComparison
         yourMetrics={data.yourMetrics}

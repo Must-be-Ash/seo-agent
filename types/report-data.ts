@@ -24,10 +24,11 @@ export interface StructuredReportData {
   };
   gaps: Array<{
     category: string;
-    severity: 'high' | 'medium' | 'low';
+    severity: 'critical' | 'high' | 'medium' | 'low';
     finding: string;
     impact: string;
     recommendation: string;
+    estimatedEffort?: string;
   }>;
   recommendations: {
     highPriority: Array<{
