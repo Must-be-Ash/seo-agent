@@ -62,3 +62,6 @@ export async function getUserReports(userId: string): Promise<SEOReport[]> {
 
   return reports;
 }
+
+// Alias for consistency
+export const getReportsByUserId = getUserReports;

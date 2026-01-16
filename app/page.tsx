@@ -114,6 +114,12 @@ export default function Home() {
     setLoading(true);
 
     try {
+      // Get wallet address
+      const user = await getCurrentUser();
+      const walletAddress = user?.evmSmartAccounts?.[0] ?
+        (await toViemAccount(user.evmSmartAccounts[0])).address :
+        'unknown';
+
       // Normalize the URL (add https:// if missing)
       const normalizedUrl = normalizeUrl(url);
 
@@ -125,7 +131,7 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           url: normalizedUrl,
-          userId: 'user-placeholder',
+          userId: walletAddress,
           targetKeyword: keyword.trim(),
         }),
       });

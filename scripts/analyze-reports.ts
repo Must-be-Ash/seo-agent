@@ -30,7 +30,7 @@ async function analyzeReports() {
     const collection = db.collection(COLLECTION_NAME);
 
     // Fetch the two specific reports
-    const reportIds = ['seo_1768600111963_731vz94ng'];
+    const reportIds = ['seo_1768601141346_rlywx3wgl', 'seo_1768601789304_xorc0lx3y'];
 
     for (const runId of reportIds) {
       console.log(`\n${'='.repeat(80)}`);
@@ -123,6 +123,21 @@ async function analyzeReports() {
         console.log(`  Your Word Count: ${report.userSiteData.wordCount}`);
         console.log(`  Competitor Avg: ${report.patterns.avgWordCount}`);
         console.log(`  Difference: ${report.userSiteData.wordCount - report.patterns.avgWordCount} (${((report.userSiteData.wordCount / report.patterns.avgWordCount - 1) * 100).toFixed(1)}%)`);
+      }
+
+      // Schema Markup Analysis
+      console.log(`\n🔍 SCHEMA MARKUP ANALYSIS:`);
+      if (report.userSiteData) {
+        console.log(`  User Site Has Schema: ${report.userSiteData.hasSchema ? '✅ YES' : '❌ NO'}`);
+      }
+      if (report.patterns?.technicalPatterns) {
+        console.log(`  Competitors with Schema: ${report.patterns.technicalPatterns.schemaUsage}/${report.patterns.technicalPatterns.totalCompetitors}`);
+      }
+      if (report.competitorData && Array.isArray(report.competitorData)) {
+        console.log(`  Competitor Details:`);
+        report.competitorData.forEach((comp: any, i: number) => {
+          console.log(`    ${i + 1}. ${comp.url}: ${comp.hasSchema ? '✅' : '❌'}`);
+        });
       }
     }
 

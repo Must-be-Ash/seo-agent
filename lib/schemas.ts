@@ -45,15 +45,15 @@ export const SEO_EXTRACTION_SCHEMA = {
     },
     hasSchema: {
       type: "boolean",
-      description: "Whether the page has structured data (schema.org markup)"
+      description: "Whether the page has structured data (schema.org markup). Check for: 1) <script type='application/ld+json'> tags containing JSON-LD structured data, 2) HTML elements with itemscope/itemtype attributes for microdata, or 3) meta tags with schema.org properties. Return true if ANY structured data is found, false otherwise."
     },
     hasOpenGraph: {
       type: "boolean",
-      description: "Whether the page has Open Graph meta tags"
+      description: "Whether the page has Open Graph meta tags. Check for <meta property='og:*'> tags (like og:title, og:description, og:image). Return true if ANY og: meta tags are found."
     },
     hasCanonical: {
       type: "boolean",
-      description: "Whether the page has a canonical link tag"
+      description: "Whether the page has a canonical link tag. Check for <link rel='canonical' href='...'> in the <head>. Return true if found."
     },
     content: {
       type: "string",

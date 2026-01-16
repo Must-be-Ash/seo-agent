@@ -338,7 +338,7 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0A0A0A' }}>
-      <div className="max-w-4xl mx-auto px-6 pt-32 pb-16">
+      <div className="max-w-4xl mx-auto px-6 pt-48 pb-16">
         <div className="rounded-2xl border p-8" style={{ backgroundColor: '#1A1A1A', borderColor: '#2A2A2A' }}>
           <h1 className="text-3xl font-bold mb-2 text-center" style={{ color: '#FFFFFF' }}>
             Analyzing Your Site
@@ -360,7 +360,7 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
           </div>
 
           <p className="text-sm text-center mt-8" style={{ color: '#555555' }}>
-            This usually takes 1-2 minutes
+            Usually takes 2 minutes. Do not refresh or leave the page.
           </p>
         </div>
       </div>
