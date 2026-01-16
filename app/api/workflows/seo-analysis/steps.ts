@@ -104,61 +104,81 @@ Return GENERIC category keywords (no brand names) as JSON:
 }
 
 /**
- * Step 3: Identify Competitor Companies with LLM
- * Uses LLM to identify actual competitor companies, then finds their product URLs
+ * Step 3: Identify Competitor Companies with Hybrid Approach
+ * 1. Search Google for the user's target keyword to see what's actually ranking
+ * 2. Use LLM to identify top competitors in that category
+ * 3. Filter out blogs/reviews, keep only actual product/service providers
  */
 export async function searchCompetitors(
   keyword: string,
   userSiteData: SEOData
 ): Promise<Array<{ rank: number; title: string; url: string; description: string }>> {
-  console.log(`[Step 3] Identifying competitor companies for: "${keyword}"`);
+  console.log(`[Step 3] Identifying competitors for keyword: "${keyword}"`);
 
-  // Step 3a: Ask LLM to identify competitor companies
-  const prompt = `You are analyzing a website in the "${keyword}" category.
+  const fetchFunc = createX402Fetch();
 
-Website Title: ${userSiteData.title}
-Website Content Preview: ${userSiteData.content.substring(0, 500)}
+  // Step 3a: Search Google for the target keyword (first 20 results)
+  console.log(`[Step 3a] Searching Google for: "${keyword}"`);
+  const googleResults: Array<{ title: string; url: string; description: string }> = [];
 
-Identify 8-10 DIRECT COMPETITOR COMPANIES (not blog posts or review sites) that offer similar products/services in this category.
+  try {
+    // Get first 2 pages of Google results (20 results)
+    for (let page = 1; page <= 2; page++) {
+      const pageResults = await searchWeb(keyword, page, fetchFunc);
+      googleResults.push(...pageResults);
+    }
+    console.log(`[Step 3a] ✓ Found ${googleResults.length} Google results for "${keyword}"`);
+  } catch (error) {
+    console.error('[Step 3a] Error searching Google:', error);
+  }
 
-Requirements:
-- Must be actual product/service providers, NOT review sites, blogs, or comparison sites
-- Must be direct competitors offering similar solutions
-- Include well-known established players AND emerging competitors
-- Return their most likely main product page URL (usually their homepage or main product page)
+  // Step 3b: Ask LLM to identify competitors in this category AND filter Google results
+  const prompt = `You are identifying COMPETITOR PRODUCTS/SERVICES for the keyword: "${keyword}"
 
-Examples of GOOD competitors:
-- For Canva → Figma (figma.com), Adobe Express (adobe.com/express), Vistacreate (create.vista.com)
-- For Stripe → PayPal, Square, Adyen
-- For Notion → Coda, ClickUp, Monday.com
+GOOGLE SEARCH RESULTS for "${keyword}":
+${googleResults.slice(0, 15).map((r, i) => `${i + 1}. ${r.title}\n   URL: ${r.url}\n   ${r.description}`).join('\n\n')}
 
-Examples of BAD competitors (DO NOT INCLUDE):
-- PCMag, TechRadar, Lifewire (review sites)
-- Blog posts about the topic
-- "Best [keyword]" listicles
+YOUR TASK:
+1. From the Google results above, identify which ones are ACTUAL PRODUCTS/SERVICES (not blogs, reviews, or listicles)
+2. Add any other major competitors in the "${keyword}" category that you know of
+
+IMPORTANT FILTERING RULES:
+✓ INCLUDE: Actual product/service providers (e.g., Wix, Squarespace, Shopify for "website builder")
+✓ INCLUDE: Companies offering solutions in this category
+✓ INCLUDE: Both established players AND emerging startups
+
+✗ EXCLUDE: Review sites (PCMag, TechRadar, G2, Capterra, etc.)
+✗ EXCLUDE: Blog posts or "Best [keyword]" listicles
+✗ EXCLUDE: Comparison sites or aggregators
+✗ EXCLUDE: Wikipedia, Reddit, Quora, forums
+✗ EXCLUDE: News articles or press releases
 
 For each competitor, provide:
-- company: Company name
-- url: Their main product URL (use .com domain, or specific product page if known)
-- description: Brief 1-sentence description of what they offer
+- company: Company/Product name
+- url: Their main product URL (extract from Google results or use known URL)
+- description: Brief description
+- source: "google" (if from search results) or "knowledge" (if from your knowledge)
 
-Return as JSON array:
+Return 8-12 competitors as JSON:
 {
   "competitors": [
     {
       "company": "Company Name",
       "url": "https://company.com",
-      "description": "Brief description of their product/service"
+      "description": "Brief description of their product/service",
+      "source": "google" or "knowledge"
     }
   ]
-}`;
+}
+
+FOCUS: Find competitors specifically for "${keyword}", NOT for the user's broader business category.`;
 
   const response = await openai.chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [
       {
         role: 'system',
-        content: 'You are a competitive analysis expert. Identify actual competitor companies, not review sites or blogs. Respond with valid JSON only.'
+        content: 'You are a competitive analysis expert. Filter Google results to find ONLY actual product/service competitors. Exclude blogs, reviews, and listicles. Respond with valid JSON only.'
       },
       {
         role: 'user',
@@ -171,12 +191,16 @@ Return as JSON array:
 
   const result = JSON.parse(response.choices[0].message.content || '{ "competitors": [] }');
 
-  // Step 3b: For each competitor, verify URL is accessible or search for it
-  const fetchFunc = createX402Fetch();
+  // Step 3c: Process and verify competitor URLs
   const verifiedCompetitors: Array<{ rank: number; title: string; url: string; description: string }> = [];
 
-  for (let i = 0; i < Math.min(result.competitors.length, 10); i++) {
-    const comp = result.competitors[i];
+  // Prioritize Google results over LLM knowledge (they're actually ranking)
+  const googleCompetitors = result.competitors.filter((c: any) => c.source === 'google');
+  const knowledgeCompetitors = result.competitors.filter((c: any) => c.source === 'knowledge');
+  const sortedCompetitors = [...googleCompetitors, ...knowledgeCompetitors];
+
+  for (let i = 0; i < Math.min(sortedCompetitors.length, 12); i++) {
+    const comp = sortedCompetitors[i];
     let finalUrl = comp.url;
     let title = comp.company;
     let description = comp.description;
@@ -186,19 +210,19 @@ Return as JSON array:
       finalUrl = `https://${finalUrl}`;
     }
 
-    // Try to search for the company's official site if URL seems suspicious
-    if (!finalUrl.includes('.com') && !finalUrl.includes('.io') && !finalUrl.includes('.ai')) {
-      console.log(`[Step 3] Searching for official site: ${comp.company}`);
-      try {
-        const searchResults = await searchWeb(`${comp.company} official site`, 1, fetchFunc);
-        if (searchResults.length > 0) {
-          finalUrl = searchResults[0].url;
-          title = searchResults[0].title;
-          description = searchResults[0].description;
-        }
-      } catch (error) {
-        console.warn(`[Step 3] Could not find URL for ${comp.company}, using LLM suggestion`);
+    // Clean up URL - remove paths if it's clearly a blog post or article
+    try {
+      const urlObj = new URL(finalUrl);
+      // If path contains blog indicators, try to get just the domain
+      if (urlObj.pathname.includes('/blog') ||
+          urlObj.pathname.includes('/article') ||
+          urlObj.pathname.includes('/news') ||
+          urlObj.pathname.match(/\/\d{4}\//)) { // Year in path (like /2024/)
+        console.log(`[Step 3c] Detected blog/article URL, using domain only: ${urlObj.hostname}`);
+        finalUrl = `${urlObj.protocol}//${urlObj.hostname}`;
       }
+    } catch (error) {
+      console.warn(`[Step 3c] Could not parse URL: ${finalUrl}`);
     }
 
     verifiedCompetitors.push({
@@ -209,9 +233,13 @@ Return as JSON array:
     });
   }
 
-  console.log(`[Step 3] ✓ Identified ${verifiedCompetitors.length} competitor companies`);
+  console.log(`[Step 3] ✓ Identified ${verifiedCompetitors.length} competitors for "${keyword}":`);
+  const googleCount = verifiedCompetitors.filter((_, i) => i < googleCompetitors.length).length;
+  console.log(`  - ${googleCount} from Google search results (actually ranking)`);
+  console.log(`  - ${verifiedCompetitors.length - googleCount} from LLM knowledge`);
   verifiedCompetitors.forEach((c, i) => {
-    console.log(`  ${i + 1}. ${c.title} - ${c.url}`);
+    const source = i < googleCount ? '🔍' : '🧠';
+    console.log(`  ${source} ${i + 1}. ${c.title} - ${c.url}`);
   });
 
   return verifiedCompetitors;
