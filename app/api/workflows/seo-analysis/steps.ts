@@ -50,7 +50,9 @@ export async function discoverKeywords(
 ): Promise<{ primary: string; secondary: string[] }> {
   console.log('[Step 2] Discovering keywords from site content');
 
-  const prompt = `Analyze this website content and identify the best SEO keywords to target:
+  const prompt = `Analyze this website and identify CATEGORY keywords for SEO competitor analysis.
+
+IMPORTANT: Do NOT use brand names in keywords. Focus on what the product/service IS, not what it's CALLED.
 
 Title: ${siteData.title}
 Meta Description: ${siteData.metaDescription}
@@ -58,17 +60,23 @@ H1 Tags: ${siteData.h1.join(', ')}
 H2 Tags: ${siteData.h2.slice(0, 10).join(', ')}
 Main Content Preview: ${siteData.content.substring(0, 2000)}
 
-Based on this content, identify:
-1. ONE primary keyword (2-5 words) that best represents the main topic and has commercial intent
-2. 3-5 secondary keywords (2-5 words each) that are closely related and should be targeted
-3. Keyword intent: "informational", "commercial", "transactional", or "navigational"
+Steps to follow:
+1. Identify the brand name from the title/content (if this is a brand's website)
+2. Determine what CATEGORY or PRODUCT TYPE this site represents
+3. Create generic category keywords that competitors would also rank for
 
-Return as JSON:
+Examples:
+- If site is "Nike.com" selling shoes → Primary: "athletic footwear" NOT "Nike shoes"
+- If site is "Canva.com" for design → Primary: "graphic design software" NOT "Canva design tools"
+- If site is "Stripe.com" for payments → Primary: "payment processing platform" NOT "Stripe payment"
+- If site is "Monday.com" for project mgmt → Primary: "project management software" NOT "Monday.com features"
+
+Return GENERIC category keywords (no brand names) as JSON:
 {
-  "primary": "main keyword here",
-  "secondary": ["keyword 1", "keyword 2", "keyword 3", "keyword 4"],
+  "primary": "category keyword (2-5 words, no brand names)",
+  "secondary": ["related category term 1", "related category term 2", "related category term 3", "related category term 4"],
   "intent": "commercial",
-  "reasoning": "Brief explanation of why these keywords were chosen"
+  "reasoning": "Brief explanation focusing on the product category"
 }`;
 
   const response = await openai.chat.completions.create({
@@ -358,7 +366,8 @@ Return as JSON:
  */
 export async function generateRecommendations(
   gaps: Array<any>,
-  userSite: SEOData
+  userSite: SEOData,
+  discoveredKeywords?: { primary: string; secondary: string[] }
 ): Promise<{
   highPriority: string[];
   mediumPriority: string[];
@@ -368,15 +377,22 @@ export async function generateRecommendations(
   console.log('[Step 7] Generating recommendations');
 
   // Group by severity
+  const criticalPriority = gaps.filter(g => g.severity === 'critical').map(g => g.recommendation);
   const highPriority = gaps.filter(g => g.severity === 'high').map(g => g.recommendation);
   const mediumPriority = gaps.filter(g => g.severity === 'medium').map(g => g.recommendation);
   const lowPriority = gaps.filter(g => g.severity === 'low').map(g => g.recommendation);
 
-  // Generate content outline with OpenAI
-  const primaryKeyword = userSite.title || 'the topic';
+  // Combine critical and high for backwards compatibility
+  const combinedHighPriority = [...criticalPriority, ...highPriority];
+
+  // Use discovered keyword, not the site title
+  const primaryKeyword = discoveredKeywords?.primary || userSite.title || 'the topic';
+  const currentH1 = userSite.h1.join(', ') || 'None';
+
   const prompt = `Based on these SEO gaps, create a detailed content outline for improving the page:
 
-PRIMARY KEYWORD: ${primaryKeyword}
+PRIMARY KEYWORD TO TARGET: ${primaryKeyword}
+CURRENT PAGE H1: ${currentH1}
 CURRENT H2 SECTIONS:
 ${userSite.h2.length > 0 ? userSite.h2.join('\n') : 'None'}
 
@@ -384,14 +400,16 @@ GAPS TO ADDRESS:
 ${gaps.map(g => `- ${g.finding}`).join('\n')}
 
 Create a comprehensive content outline with:
-- Recommended H1 (use the primary keyword "${primaryKeyword}" naturally, not placeholders)
+- Recommended H1: Create a NEW H1 that's DIFFERENT from the current H1 ("${currentH1}"). Use the primary keyword "${primaryKeyword}" naturally. Make it more compelling and SEO-friendly than the current one.
 - 8-12 H2 sections (numbered format: "### 1. Section Title")
 - For each section, include: title, estimated word count in parentheses like "(Estimated Word Count: 200)", and a brief description
 - Use the actual keyword "${primaryKeyword}" throughout, NOT placeholders like [Topic]
 
+IMPORTANT: The recommended H1 should be DIFFERENT from the current H1. Don't just repeat what they already have.
+
 Format as markdown with this exact structure:
 ## Recommended H1
-**"Your H1 here using the keyword"**
+**"Your NEW H1 here using the keyword"**
 
 ## H2 Sections
 ### 1. Section Title (Estimated Word Count: 200)
@@ -419,10 +437,10 @@ Include a "Total Estimated Word Count" at the end.`;
 
   const contentOutline = response.choices[0].message.content || '';
 
-  console.log(`[Step 7] ✓ Generated recommendations (${highPriority.length} high priority)`);
+  console.log(`[Step 7] ✓ Generated recommendations (${combinedHighPriority.length} high priority)`);
 
   return {
-    highPriority,
+    highPriority: combinedHighPriority,
     mediumPriority,
     lowPriority,
     contentOutline,

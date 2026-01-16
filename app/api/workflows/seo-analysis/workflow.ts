@@ -50,6 +50,7 @@ async function searchCompetitorsStep(primaryKeyword: string, runId: string) {
 async function fetchCompetitorDataStep(
   searchResults: Array<{ rank: number; title: string; url: string; description: string }>,
   primaryKeyword: string,
+  userUrl: string,
   runId: string
 ) {
   "use step";
@@ -57,7 +58,21 @@ async function fetchCompetitorDataStep(
   const { updateReport } = await import('@/lib/db');
 
   console.log('[Workflow] Step 4: Fetching competitor data');
-  const competitorData = await steps.fetchCompetitorData(searchResults, primaryKeyword);
+
+  // Filter out user's own domain before fetching
+  const userDomain = new URL(userUrl).hostname.replace('www.', '');
+  const filteredResults = searchResults.filter(result => {
+    try {
+      const resultDomain = new URL(result.url).hostname.replace('www.', '');
+      return resultDomain !== userDomain;
+    } catch {
+      return true; // Keep if URL parsing fails
+    }
+  });
+
+  console.log(`[Workflow] Filtered out user's domain (${userDomain}), ${filteredResults.length}/${searchResults.length} competitors remaining`);
+
+  const competitorData = await steps.fetchCompetitorData(filteredResults, primaryKeyword);
 
   // Save to database
   await updateReport(runId, { competitorData });
@@ -98,13 +113,13 @@ async function identifyGapsStep(
   return gaps;
 }
 
-async function generateRecommendationsStep(gaps: Array<any>, userSiteData: SEOData, runId: string) {
+async function generateRecommendationsStep(gaps: Array<any>, userSiteData: SEOData, discoveredKeywords: any, runId: string) {
   "use step";
 
   const { updateReport } = await import('@/lib/db');
 
   console.log('[Workflow] Step 7: Generating recommendations');
-  const recommendations = await steps.generateRecommendations(gaps, userSiteData);
+  const recommendations = await steps.generateRecommendations(gaps, userSiteData, discoveredKeywords);
 
   // Save to database
   await updateReport(runId, { recommendations });
@@ -284,8 +299,8 @@ export const seoAnalysisWorkflow = async (input: { url: string; runId: string })
   // Step 3: Search for competitors
   const searchResults = await searchCompetitorsStep(discoveredKeywords.primary, runId);
 
-  // Step 4: Fetch competitor pages
-  const competitorData = await fetchCompetitorDataStep(searchResults, discoveredKeywords.primary, runId);
+  // Step 4: Fetch competitor pages (filter out user's own domain)
+  const competitorData = await fetchCompetitorDataStep(searchResults, discoveredKeywords.primary, url, runId);
 
   // Step 5: Analyze patterns
   const patterns = await analyzePatternsStep(userSiteData, competitorData, runId);
@@ -294,7 +309,7 @@ export const seoAnalysisWorkflow = async (input: { url: string; runId: string })
   const gaps = await identifyGapsStep(userSiteData, patterns, competitorData, runId);
 
   // Step 7: Generate recommendations
-  const recommendations = await generateRecommendationsStep(gaps, userSiteData, runId);
+  const recommendations = await generateRecommendationsStep(gaps, userSiteData, discoveredKeywords, runId);
 
   // Step 8: Calculate overall score
   const score = await calculateScoreStep(userSiteData, patterns, gaps, runId);
