@@ -145,7 +145,8 @@ See `bug.md` for full migration details from v1 to v2.
 - [x402 Protocol Docs](https://x402.gitbook.io/x402)
 - [Hyperbrowser Docs](https://hyperbrowser.ai/docs)
 - [Vercel Workflow Kit](https://vercel.com/docs/workflow)
-- [Coinbase CDP](https://docs.cdp.coinbase.com/)
+- [Coinbase CDP Docs](https://docs.cdp.coinbase.com/)
+- [CDP API Keys](https://portal.cdp.coinbase.com/)
 
 ## License
 
