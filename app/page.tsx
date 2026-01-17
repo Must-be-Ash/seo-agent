@@ -196,7 +196,7 @@ export default function Home() {
         {/* Hero Section */}
         <section className="max-w-6xl mx-auto px-8 md:px-6 w-full pt-16 md:pt-0">
           <div className="text-center mb-6 md:mb-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 md:mb-4" style={{ backgroundColor: '#1A1A1A', border: '1px solid #2A2A2A', position: 'relative', zIndex: 10 }}>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 md:mb-4" style={{ backgroundColor: '#1A1A1A', border: '1px solid #2A2A2A' }}>
               <Sparkles className="w-4 h-4" style={{ color: '#888888' }} />
               <span className="text-sm font-medium" style={{ color: '#CCCCCC' }}>AI-Powered SEO Analysis</span>
             </div>
@@ -232,8 +232,6 @@ export default function Home() {
                     backgroundColor: '#1A1A1A',
                     borderColor: focused ? '#444444' : (error ? '#EF4444' : '#2A2A2A'),
                     color: '#FFFFFF',
-                    position: 'relative',
-                    zIndex: 10,
                   }}
                 />
               </div>
@@ -253,8 +251,6 @@ export default function Home() {
                     backgroundColor: '#1A1A1A',
                     borderColor: '#2A2A2A',
                     color: '#FFFFFF',
-                    position: 'relative',
-                    zIndex: 10,
                   }}
                 />
               </div>
@@ -272,7 +268,6 @@ export default function Home() {
                 style={{
                   backgroundColor: (loading || !url.trim() || !keyword.trim()) ? '#CCCCCC' : '#FFFFFF',
                   color: '#000000',
-                  zIndex: 10,
                 }}
                 onMouseEnter={(e) => {
                   if (!loading && url.trim() && keyword.trim()) {

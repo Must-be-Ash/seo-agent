@@ -97,7 +97,7 @@ export function NavDock({ rightContent }: NavDockProps = {}) {
                     className={`relative z-10 inline-flex items-center justify-center gap-1.5 ${linkClass} rounded-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-background/50 transition-all`}
                   >
                     <Github className={`${iconClass} transition-all duration-200`} />
-                    <span className="hidden sm:inline">GitHub</span>
+                    <span className="hidden sm:inline">Fork</span>
                   </a>
                   {/* Wallet / Sign In */}
                   {isSignedIn ? (
