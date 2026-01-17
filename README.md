@@ -35,6 +35,7 @@ Backend pays Hyperbrowser for web scraping using **Base USDC**.
 - **x402 v2**: HTTP 402 payment protocol with CDP facilitator
 - **Hyperbrowser**: Web scraping with x402 payments
 - **OpenAI**: GPT-4o-mini for keyword discovery and analysis
+- **MongoDB**: Database for storing reports and analysis results
 - **Coinbase CDP**: Embedded wallet for user payments
 
 ## Environment Variables
@@ -42,15 +43,22 @@ Backend pays Hyperbrowser for web scraping using **Base USDC**.
 Create a `.env.local` file with:
 
 ```bash
-# x402 Payment Configuration
-USDC_RECEIVING_WALLET_ADDRESS=0x...  # Your wallet to receive user payments
-X402_WALLET_PRIVATE_KEY=0x...         # Backend wallet private key for Hyperbrowser payments
+# MongoDB (required)
+MONGODB_URI=mongodb+srv://...
 
 # OpenAI API
 OPENAI_API_KEY=sk-...
 
-# Database (if using)
-# Add your database connection string here
+# Coinbase Developer Platform
+NEXT_PUBLIC_CDP_PROJECT_ID=...
+CDP_API_KEY_ID=...
+CDP_API_KEY_SECRET=...
+
+# x402 Payment Configuration
+USDC_RECEIVING_WALLET_ADDRESS=0x...  # Your wallet to receive user payments
+FACILITATOR_URL=https://x402.org/facilitator
+NEXT_PUBLIC_NETWORK=base
+USDC_CONTRACT_ADDRESS=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
 ```
 
 ## Getting Started
@@ -112,10 +120,14 @@ seo-agent/
 ├── lib/
 │   ├── payment-verification.ts     # x402 v2 server-side payment handling
 │   ├── hyperbrowser.ts            # Hyperbrowser API client
-│   ├── schemas.ts                 # Zod schemas for data extraction
+│   ├── mongodb.ts                 # MongoDB client connection
+│   ├── db.ts                      # Database operations (reports, pagination)
+│   ├── validation.ts              # URL and input validation
+│   ├── safe-errors.ts             # Error sanitization
+│   ├── openai.ts                  # OpenAI client wrapper
 │   └── config.ts                  # App configuration
 └── components/
-    └── Header.tsx                 # App header with wallet
+    └── nav-dock.tsx               # Navigation with wallet integration
 ```
 
 ## x402 v2 Migration Notes

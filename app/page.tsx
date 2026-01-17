@@ -194,31 +194,28 @@ export default function Home() {
       <AsciiBackground />
       <main className="w-full">
         {/* Hero Section */}
-        <section className="max-w-6xl mx-auto px-6 w-full">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4" style={{ backgroundColor: '#1A1A1A', border: '1px solid #2A2A2A', position: 'relative', zIndex: 10 }}>
+        <section className="max-w-6xl mx-auto px-8 md:px-6 w-full pt-16 md:pt-0">
+          <div className="text-center mb-6 md:mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 md:mb-4" style={{ backgroundColor: '#1A1A1A', border: '1px solid #2A2A2A', position: 'relative', zIndex: 10 }}>
               <Sparkles className="w-4 h-4" style={{ color: '#888888' }} />
               <span className="text-sm font-medium" style={{ color: '#CCCCCC' }}>AI-Powered SEO Analysis</span>
             </div>
 
-            <h1 className="text-7xl font-bold mb-4 leading-tight" style={{ color: '#FFFFFF' }}>
+            <h1 className="text-4xl md:text-7xl font-bold mb-3 md:mb-4 leading-tight px-2" style={{ color: '#FFFFFF' }}>
               Find Your SEO
               <br />
               <span style={{ color: '#888888' }}>Gaps in Minutes</span>
             </h1>
 
-            <p className="text-2xl mb-3 max-w-2xl mx-auto leading-relaxed" style={{ color: '#CCCCCC' }}>
+            <p className="text-sm md:text-2xl mb-6 md:mb-3 max-w-2xl mx-auto leading-relaxed px-4 md:px-0" style={{ color: '#CCCCCC' }}>
               Compare your site against top competitors and get actionable insights to improve your search rankings
             </p>
           </div>
 
           {/* Main CTA Form */}
-          <div className="max-w-2xl mx-auto">
-            <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="max-w-2xl mx-auto px-4 md:px-0">
+            <form onSubmit={handleSubmit} className="space-y-2">
               <div className="relative">
-                <div className="absolute left-6 top-1/2 -translate-y-1/2" style={{ color: '#666666' }}>
-                  <Search className="h-6 w-6" />
-                </div>
                 <input
                   type="text"
                   value={url}
@@ -228,9 +225,9 @@ export default function Home() {
                   }}
                   onFocus={() => setFocused(true)}
                   onBlur={() => setFocused(false)}
-                  placeholder="Enter your website URL (e.g., example.com)"
+                  placeholder="example.com"
                   disabled={loading}
-                  className="w-full pl-16 pr-6 py-5 text-lg rounded-xl border-2 transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 md:px-6 py-4 md:py-5 text-base md:text-lg rounded-xl border-2 transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
                     backgroundColor: '#1A1A1A',
                     borderColor: focused ? '#444444' : (error ? '#EF4444' : '#2A2A2A'),
@@ -249,9 +246,9 @@ export default function Home() {
                     setKeyword(e.target.value);
                     setError(null);
                   }}
-                  placeholder="Enter target keyword (e.g., graphic design software)"
+                  placeholder="Target keyword (e.g., graphic design)"
                   disabled={loading}
-                  className="w-full px-6 py-5 text-lg rounded-xl border-2 transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 md:px-6 py-4 md:py-5 text-base md:text-lg rounded-xl border-2 transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
                     backgroundColor: '#1A1A1A',
                     borderColor: '#2A2A2A',
@@ -260,9 +257,6 @@ export default function Home() {
                     zIndex: 10,
                   }}
                 />
-                <p className="text-xs mt-2 px-2" style={{ color: '#888888' }}>
-                  The keyword you want to rank for on Google
-                </p>
               </div>
 
               {error && (
@@ -274,7 +268,7 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={loading || !url.trim() || !keyword.trim()}
-                className="w-full py-5 px-6 rounded-xl font-semibold text-lg transition-all flex items-center justify-center gap-3 group disabled:cursor-not-allowed relative overflow-hidden"
+                className="w-full py-4 md:py-5 px-6 rounded-xl font-semibold text-base md:text-lg transition-all flex items-center justify-center gap-3 group disabled:cursor-not-allowed relative overflow-hidden mt-6 md:mt-8"
                 style={{
                   backgroundColor: (loading || !url.trim() || !keyword.trim()) ? '#CCCCCC' : '#FFFFFF',
                   color: '#000000',
@@ -292,7 +286,7 @@ export default function Home() {
                 }}
               >
                 {loading ? (
-                  <span className="text-lg font-semibold" style={{ color: '#000000' }}>
+                  <span className="text-base md:text-lg font-semibold" style={{ color: '#000000' }}>
                     Analyzing your site...
                   </span>
                 ) : (
@@ -303,8 +297,8 @@ export default function Home() {
                 )}
               </button>
 
-              <p className="text-center text-sm" style={{ color: '#999999' }}>
-                Powered by Hyperbrowser • ${COST_CONFIG.seoAnalysis} USDC per keyword analysis
+              <p className="text-center text-xs md:text-sm px-2" style={{ color: '#999999' }}>
+                Powered by Hyperbrowser • ${COST_CONFIG.seoAnalysis} USDC per report
               </p>
             </form>
           </div>

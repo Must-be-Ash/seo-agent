@@ -112,17 +112,17 @@ export default function ReportsPage() {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#212121' }}>
         <div className="max-w-md w-full mx-auto px-6 text-center">
           <div className="mb-6">
-            <FileText className="w-16 h-16 mx-auto" style={{ color: '#666666' }} />
+            <FileText className="w-12 h-12 md:w-16 md:h-16 mx-auto" style={{ color: '#666666' }} />
           </div>
-          <h1 className="text-3xl font-bold mb-4" style={{ color: '#FFFFFF' }}>
+          <h1 className="text-2xl md:text-3xl font-bold mb-4" style={{ color: '#FFFFFF' }}>
             Sign In Required
           </h1>
-          <p className="text-lg mb-8" style={{ color: '#888888' }}>
+          <p className="text-base md:text-lg mb-8" style={{ color: '#888888' }}>
             Please sign in to view your report history
           </p>
           <button
             onClick={() => router.push('/')}
-            className="px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 mx-auto"
+            className="px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 mx-auto text-sm md:text-base"
             style={{ backgroundColor: '#FFFFFF', color: '#000000' }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#F5F5F5';
@@ -156,12 +156,12 @@ export default function ReportsPage() {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#212121' }}>
         <div className="max-w-md w-full mx-auto px-6 text-center">
-          <p className="text-lg mb-8" style={{ color: '#EF4444' }}>
+          <p className="text-base md:text-lg mb-8" style={{ color: '#EF4444' }}>
             {error}
           </p>
           <button
             onClick={() => router.push('/')}
-            className="px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 mx-auto"
+            className="px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 mx-auto text-sm md:text-base"
             style={{ backgroundColor: '#FFFFFF', color: '#000000' }}
           >
             <Home className="w-4 h-4" />
@@ -178,17 +178,17 @@ export default function ReportsPage() {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#212121' }}>
         <div className="max-w-md w-full mx-auto px-6 text-center">
           <div className="mb-6">
-            <FileText className="w-16 h-16 mx-auto" style={{ color: '#666666' }} />
+            <FileText className="w-12 h-12 md:w-16 md:h-16 mx-auto" style={{ color: '#666666' }} />
           </div>
-          <h1 className="text-3xl font-bold mb-4" style={{ color: '#FFFFFF' }}>
+          <h1 className="text-2xl md:text-3xl font-bold mb-4" style={{ color: '#FFFFFF' }}>
             No Reports Yet
           </h1>
-          <p className="text-lg mb-8" style={{ color: '#888888' }}>
+          <p className="text-base md:text-lg mb-8" style={{ color: '#888888' }}>
             You haven't created any SEO reports yet
           </p>
           <button
             onClick={() => router.push('/')}
-            className="px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 mx-auto"
+            className="px-6 py-3 rounded-lg font-medium transition-all flex items-center gap-2 mx-auto text-sm md:text-base"
             style={{ backgroundColor: '#FFFFFF', color: '#000000' }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#F5F5F5';
@@ -208,33 +208,33 @@ export default function ReportsPage() {
   // Show reports
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#212121' }}>
-      <div className="max-w-5xl mx-auto px-6 py-16">
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold mb-2" style={{ color: '#FFFFFF' }}>
+      <div className="max-w-5xl mx-auto px-4 md:px-6 pt-28 md:pt-16 pb-16">
+        <div className="mb-10 md:mb-12">
+          <h1 className="text-3xl md:text-4xl font-bold mb-2" style={{ color: '#FFFFFF' }}>
             Your SEO Reports
           </h1>
-          <p style={{ color: '#888888' }}>
+          <p className="text-sm md:text-base" style={{ color: '#888888' }}>
             {total > 0 ? `Showing ${reports.length} of ${total} reports` : 'View and access your previous SEO analyses'}
           </p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           {reports.map((report) => (
             <div
               key={report.runId}
               onClick={() => router.push(`/report/${report.runId}`)}
-              className="rounded-xl p-6 border transition-all cursor-pointer hover:border-[#444444]"
+              className="rounded-xl p-4 md:p-6 border transition-all cursor-pointer hover:border-[#444444]"
               style={{ backgroundColor: '#1A1A1A', borderColor: '#2A2A2A' }}
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-semibold" style={{ color: '#FFFFFF' }}>
+              <div className="flex items-start justify-between gap-3 md:gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 mb-3 md:mb-2">
+                    <h3 className="text-base md:text-xl font-semibold truncate" style={{ color: '#FFFFFF' }}>
                       {report.url}
                     </h3>
                     {report.status === 'completed' && (
                       <span
-                        className="px-2 py-1 rounded text-xs font-medium"
+                        className="px-2 py-1 rounded text-xs font-medium w-fit"
                         style={{ backgroundColor: '#1E3A1E', color: '#4ADE80' }}
                       >
                         Completed
@@ -242,7 +242,7 @@ export default function ReportsPage() {
                     )}
                     {report.status === 'analyzing' && (
                       <span
-                        className="px-2 py-1 rounded text-xs font-medium"
+                        className="px-2 py-1 rounded text-xs font-medium w-fit"
                         style={{ backgroundColor: '#3A3A1A', color: '#EAB308' }}
                       >
                         Analyzing
@@ -250,7 +250,7 @@ export default function ReportsPage() {
                     )}
                     {report.status === 'failed' && (
                       <span
-                        className="px-2 py-1 rounded text-xs font-medium"
+                        className="px-2 py-1 rounded text-xs font-medium w-fit"
                         style={{ backgroundColor: '#3A1A1A', color: '#EF4444' }}
                       >
                         Failed
@@ -258,16 +258,16 @@ export default function ReportsPage() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-6 mb-3">
+                  <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6 mb-3">
                     <div className="flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4" style={{ color: '#666666' }} />
-                      <span className="text-sm" style={{ color: '#888888' }}>
+                      <TrendingUp className="w-4 h-4 flex-shrink-0" style={{ color: '#666666' }} />
+                      <span className="text-xs md:text-sm truncate" style={{ color: '#888888' }}>
                         {report.targetKeyword}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" style={{ color: '#666666' }} />
-                      <span className="text-sm" style={{ color: '#888888' }}>
+                      <Calendar className="w-4 h-4 flex-shrink-0" style={{ color: '#666666' }} />
+                      <span className="text-xs md:text-sm" style={{ color: '#888888' }}>
                         {formatDate(report.createdAt)}
                       </span>
                     </div>
@@ -290,18 +290,18 @@ export default function ReportsPage() {
                   )}
                 </div>
 
-                <ArrowRight className="w-5 h-5 flex-shrink-0" style={{ color: '#666666' }} />
+                <ArrowRight className="w-5 h-5 flex-shrink-0 mt-1" style={{ color: '#666666' }} />
               </div>
             </div>
           ))}
         </div>
 
-        <div className="mt-12 flex flex-col items-center gap-4">
+        <div className="mt-8 md:mt-12 flex flex-col items-center gap-4 px-4">
           {hasMore && (
             <button
               onClick={loadMoreReports}
               disabled={loadingMore}
-              className="px-8 py-3 rounded-lg font-medium transition-all"
+              className="w-full md:w-auto px-8 py-3 rounded-lg font-medium transition-all text-sm md:text-base"
               style={{
                 backgroundColor: loadingMore ? '#3A3A3A' : '#FFFFFF',
                 color: loadingMore ? '#888888' : '#000000',
@@ -324,7 +324,7 @@ export default function ReportsPage() {
 
           <button
             onClick={() => router.push('/')}
-            className="px-6 py-3 rounded-lg font-medium transition-all"
+            className="w-full md:w-auto px-6 py-3 rounded-lg font-medium transition-all text-sm md:text-base"
             style={{ backgroundColor: '#2A2A2A', color: '#FFFFFF' }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = '#3A3A3A';

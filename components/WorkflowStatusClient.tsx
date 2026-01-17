@@ -196,7 +196,7 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
   if (status === 'failed' || status === 'error') {
     return (
       <div className="min-h-screen" style={{ backgroundColor: '#111111' }}>
-        <div className="max-w-2xl mx-auto px-6 py-16">
+        <div className="max-w-2xl mx-auto px-6 pt-28 md:pt-16 pb-16">
           <div className="rounded-2xl border p-8" style={{ backgroundColor: '#1A1A1A', borderColor: '#2A2A2A' }}>
             <div className="flex items-center gap-4 mb-6">
               <div className="p-3 rounded-full" style={{ backgroundColor: '#222222' }}>
@@ -236,7 +236,7 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
 
     return (
       <div className="min-h-screen" style={{ backgroundColor: '#222222' }}>
-        <div className="max-w-6xl mx-auto px-6 py-12">
+        <div className="max-w-6xl mx-auto px-6 pt-28 md:pt-12 pb-12">
           {/* Success header - minimal and elegant */}
           <div className="mb-12 no-print">
             <div className="flex items-center gap-4 mb-4">
@@ -338,7 +338,7 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0A0A0A' }}>
-      <div className="max-w-4xl mx-auto px-6 pt-24 pb-16">
+      <div className="max-w-4xl mx-auto px-6 pt-32 md:pt-24 pb-16">
         <div className="rounded-2xl border p-8" style={{ backgroundColor: '#1A1A1A', borderColor: '#2A2A2A' }}>
           <h1 className="text-3xl font-bold mb-2 text-center" style={{ color: '#FFFFFF' }}>
             Analyzing Your Site
