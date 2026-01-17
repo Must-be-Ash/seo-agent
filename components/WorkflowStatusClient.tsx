@@ -360,7 +360,7 @@ export function WorkflowStatusClient({ runId, initialData }: WorkflowStatusClien
           </div>
 
           <p className="text-sm text-center mt-8" style={{ color: '#555555' }}>
-            Usually takes 2 minutes. Do not refresh or leave the page.
+            This usually takes 2 minutes
           </p>
         </div>
       </div>

@@ -491,6 +491,18 @@ Identify ALL significant SEO gaps (typically 4-10). For each gap:
 - recommendation: Specific, actionable fix with target metrics
 - estimatedEffort: "Quick win (<1 week)", "Medium (1-4 weeks)", or "Long-term (1+ months)"
 
+IMPORTANT - Schema Markup Recommendations:
+If the user site is missing schema markup (hasSchema: false), provide SPECIFIC schema.org types they should implement based on the page type:
+- For SaaS/Product pages: Organization, Product, SoftwareApplication, FAQPage, BreadcrumbList
+- For E-commerce: Product, Offer, AggregateRating, Review, Organization
+- For Content/Blog: Article, BlogPosting, Person (author), Organization, BreadcrumbList
+- For Local Business: LocalBusiness, Organization, PostalAddress, OpeningHours
+- For Services: Service, ProfessionalService, Organization, FAQPage
+- For Landing Pages: Organization, WebSite, WebPage
+
+In the recommendation field for schema gaps, list 3-5 specific schema types with brief explanations, formatted as:
+"Implement structured data using schema.org markup: 1) Organization schema (company info, logo, social links), 2) Product/SoftwareApplication schema (features, pricing, ratings), 3) FAQPage schema (common questions), 4) BreadcrumbList schema (navigation hierarchy)"
+
 Return as JSON:
 {
   "gaps": [

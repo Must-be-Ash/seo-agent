@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, LogIn, FileText, FolderOpen } from 'lucide-react';
+import { Home, LogIn, FileText } from 'lucide-react';
 import { ReactNode, useState, useEffect } from 'react';
 import { motion, LayoutGroup } from 'framer-motion';
 import { useIsSignedIn, useCurrentUser } from '@coinbase/cdp-hooks';
@@ -46,13 +46,9 @@ export function NavDock({ rightContent }: NavDockProps = {}) {
     ? 'p-1 sm:p-1'
     : 'p-1.5 sm:p-1';
 
-  // Check if we're on a report page
-  const isOnReportPage = pathname.startsWith('/report/');
-
   const navItems = [
-    { path: '/', icon: Home, label: 'Home', isActive: isActive('/') && !pathname.startsWith('/report') && pathname !== '/reports' },
-    ...(isSignedIn ? [{ path: '/reports', icon: FolderOpen, label: 'Reports', isActive: pathname === '/reports' }] : []),
-    ...(isOnReportPage ? [{ path: pathname, icon: FileText, label: 'Report', isActive: true }] : []),
+    { path: '/', icon: Home, label: 'Home', isActive: isActive('/') && !pathname.startsWith('/report') },
+    ...(isSignedIn ? [{ path: '/report', icon: FileText, label: 'Report', isActive: pathname.startsWith('/report') }] : []),
   ];
 
   return (
