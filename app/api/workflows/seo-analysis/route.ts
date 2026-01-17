@@ -117,8 +117,9 @@ export async function POST(request: Request) {
     }
 
     // 4. URL FORMAT VALIDATION
+    let parsedUrl;
     try {
-      new URL(sanitizedUrl);
+      parsedUrl = new URL(sanitizedUrl);
     } catch {
       return NextResponse.json(
         { error: 'Invalid URL format' },
@@ -126,7 +127,27 @@ export async function POST(request: Request) {
       );
     }
 
-    // 5. CREATE INITIAL REPORT IN DATABASE
+    // 5. TLD VALIDATION (prevent wasting money on invalid domains)
+    // Ensure domain has a valid TLD (e.g., v0.app ✓, v0 ✗)
+    const hostname = parsedUrl.hostname;
+    if (!hostname.includes('.')) {
+      return NextResponse.json(
+        { error: 'Invalid domain: Must include TLD (e.g., example.com, not just example)' },
+        { status: 400 }
+      );
+    }
+
+    // Check that TLD is at least 2 characters
+    const parts = hostname.split('.');
+    const tld = parts[parts.length - 1];
+    if (tld.length < 2) {
+      return NextResponse.json(
+        { error: 'Invalid domain: TLD must be at least 2 characters' },
+        { status: 400 }
+      );
+    }
+
+    // 6. CREATE INITIAL REPORT IN DATABASE
     console.log('[API] Creating initial report for:', sanitizedUrl);
     const runId = `seo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -139,7 +160,7 @@ export async function POST(request: Request) {
       status: 'analyzing',
     });
 
-    // 6. START WORKFLOW (with sanitized inputs)
+    // 7. START WORKFLOW (with sanitized inputs)
     console.log('[API] Starting SEO analysis workflow');
     const run = await start(seoAnalysisWorkflow, [{
       runId,
@@ -149,7 +170,7 @@ export async function POST(request: Request) {
 
     console.log('[API] ✓ Workflow started:', run.runId);
 
-    // 7. RETURN SUCCESS
+    // 8. RETURN SUCCESS
     // Note: PAYMENT-RESPONSE header is omitted because settlement is async
     // Client can check settlement status separately if needed
     // Return our custom runId (not run.runId) so client can access the report
