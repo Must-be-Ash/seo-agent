@@ -19,12 +19,12 @@ Users pay **$0.50 USDC on Base mainnet** to generate an SEO report.
 - Network: `eip155:8453` (Base mainnet)
 - Asset: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` (USDC)
 
-### SEO Agent → Hyperbrowser (Base Only)
+### SEO Agent → Hyperbrowser (Base)
 Backend pays Hyperbrowser for web scraping using **Base USDC**.
 
 **Hyperbrowser Endpoints Accept:**
 - **Base mainnet** (eip155:8453): USDC `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` - **Used by this app**
-- **Solana mainnet** (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp): USDC `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` - *Not used*
+- **Solana mainnet** (solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp): USDC `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` - *Not used in this demo app*
 
 > Note: While Hyperbrowser accepts both Base and Solana, this app uses Base only for both user payments and Hyperbrowser API calls.
 
