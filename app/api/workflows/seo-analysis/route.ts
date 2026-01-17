@@ -11,6 +11,7 @@ import {
   createPaymentResponseHeader,
   encodePaymentRequired,
 } from '@/lib/payment-verification';
+import { logAndSanitizeError } from '@/lib/safe-errors';
 // Using x402 v2 with CDP facilitator
 
 // Increase timeout for workflow execution (max 300s on Hobby/Pro)
@@ -158,11 +159,11 @@ export async function POST(request: Request) {
       message: 'SEO analysis started',
     });
   } catch (error) {
-    console.error('[API] Workflow start error:', error);
+    const safeError = logAndSanitizeError(error, 'workflow-start');
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: safeError,
       },
       { status: 500 }
     );

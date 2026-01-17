@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { generateObject, generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
+import { safeParse } from './safe-json';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -94,7 +95,7 @@ export async function generateJSON<T = any>(
   });
 
   const content = response.choices[0].message.content || '{}';
-  return JSON.parse(content) as T;
+  return safeParse<T>(content, {} as T);
 }
 
 /**

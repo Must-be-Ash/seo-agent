@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getReportByRunId } from '@/lib/db';
+import { logAndSanitizeError } from '@/lib/safe-errors';
 
 interface RouteParams {
   params: Promise<{
@@ -10,6 +11,14 @@ interface RouteParams {
 export async function GET(request: Request, { params }: RouteParams) {
   try {
     const { runId } = await params;
+
+    // Validate runId format
+    if (!/^seo_\d+_[a-z0-9]{9}$/.test(runId)) {
+      return NextResponse.json(
+        { error: 'Invalid report ID format' },
+        { status: 400 }
+      );
+    }
 
     // Fetch report from database
     const report = await getReportByRunId(runId);
@@ -50,9 +59,9 @@ export async function GET(request: Request, { params }: RouteParams) {
       },
     });
   } catch (error) {
-    console.error('Status fetch error:', error);
+    const safeError = logAndSanitizeError(error, 'status-fetch');
     return NextResponse.json(
-      { error: 'Failed to fetch status' },
+      { error: safeError },
       { status: 500 }
     );
   }

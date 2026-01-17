@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
+import { logAndSanitizeError } from '@/lib/safe-errors';
 
 export async function GET() {
   try {
@@ -20,8 +21,9 @@ export async function GET() {
       })),
     });
   } catch (error) {
+    const safeError = logAndSanitizeError(error, 'debug-reports-list');
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { error: safeError },
       { status: 500 }
     );
   }

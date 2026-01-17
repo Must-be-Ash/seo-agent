@@ -118,7 +118,7 @@ export async function verifyPayment(
       };
     }
   } catch (error) {
-    console.error('[x402] Payment verification error:', error);
+    console.error('[x402] Payment verification error:', error instanceof Error ? error.message : 'Unknown error');
     return {
       isValid: false,
       error: error instanceof Error ? error.message : 'Verification failed',
@@ -160,7 +160,7 @@ export async function settlePayment(
       };
     }
   } catch (error) {
-    console.error('[x402] Payment settlement error:', error);
+    console.error('[x402] Payment settlement error:', error instanceof Error ? error.message : 'Unknown error');
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Settlement failed',

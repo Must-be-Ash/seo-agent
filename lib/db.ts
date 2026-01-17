@@ -49,18 +49,32 @@ export async function updateReport(runId: string, data: Partial<SEOReport>): Pro
   );
 }
 
-export async function getUserReports(userId: string): Promise<SEOReport[]> {
+export async function getUserReports(
+  userId: string,
+  options: { limit?: number; offset?: number } = {}
+): Promise<{ reports: SEOReport[]; total: number; hasMore: boolean }> {
+  const limit = Math.min(options.limit || 50, 100); // Max 100 per request
+  const offset = options.offset || 0;
+
   const client = await clientPromise;
   const db = client.db(DB_NAME);
   const collection = db.collection<SEOReport>(COLLECTION_NAME);
 
-  const reports = await collection
-    .find({ userId })
-    .sort({ createdAt: -1 })
-    .limit(50)
-    .toArray();
+  const [reports, total] = await Promise.all([
+    collection
+      .find({ userId })
+      .sort({ createdAt: -1 })
+      .skip(offset)
+      .limit(limit)
+      .toArray(),
+    collection.countDocuments({ userId }),
+  ]);
 
-  return reports;
+  return {
+    reports,
+    total,
+    hasMore: offset + reports.length < total,
+  };
 }
 
 // Alias for consistency

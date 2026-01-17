@@ -18,7 +18,10 @@ interface Report {
 export default function ReportsPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
   const { isSignedIn } = useIsSignedIn();
   const router = useRouter();
 
@@ -43,11 +46,13 @@ export default function ReportsPage() {
 
         console.log('[Reports] Fetching reports for:', walletAddress);
 
-        const response = await fetch(`/api/reports/user?userId=${walletAddress}`);
+        const response = await fetch(`/api/reports/user?userId=${walletAddress}&limit=8&offset=0`);
         const data = await response.json();
 
         if (data.success) {
           setReports(data.reports);
+          setHasMore(data.hasMore);
+          setTotal(data.total);
         } else {
           setError(data.error || 'Failed to fetch reports');
         }
@@ -61,6 +66,35 @@ export default function ReportsPage() {
 
     fetchReports();
   }, [isSignedIn]);
+
+  const loadMoreReports = async () => {
+    if (!isSignedIn || loadingMore) return;
+
+    setLoadingMore(true);
+    try {
+      const user = await getCurrentUser();
+      const walletAddress = user?.evmSmartAccounts?.[0] ?
+        (await toViemAccount(user.evmSmartAccounts[0])).address :
+        null;
+
+      if (!walletAddress) {
+        return;
+      }
+
+      const offset = reports.length;
+      const response = await fetch(`/api/reports/user?userId=${walletAddress}&limit=8&offset=${offset}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setReports(prev => [...prev, ...data.reports]);
+        setHasMore(data.hasMore);
+      }
+    } catch (err) {
+      console.error('[Reports] Error loading more:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString('en-US', {
@@ -180,7 +214,7 @@ export default function ReportsPage() {
             Your SEO Reports
           </h1>
           <p style={{ color: '#888888' }}>
-            View and access your previous SEO analyses
+            {total > 0 ? `Showing ${reports.length} of ${total} reports` : 'View and access your previous SEO analyses'}
           </p>
         </div>
 
@@ -262,7 +296,32 @@ export default function ReportsPage() {
           ))}
         </div>
 
-        <div className="mt-12 text-center">
+        <div className="mt-12 flex flex-col items-center gap-4">
+          {hasMore && (
+            <button
+              onClick={loadMoreReports}
+              disabled={loadingMore}
+              className="px-8 py-3 rounded-lg font-medium transition-all"
+              style={{
+                backgroundColor: loadingMore ? '#3A3A3A' : '#FFFFFF',
+                color: loadingMore ? '#888888' : '#000000',
+                cursor: loadingMore ? 'not-allowed' : 'pointer',
+              }}
+              onMouseEnter={(e) => {
+                if (!loadingMore) {
+                  e.currentTarget.style.backgroundColor = '#F5F5F5';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!loadingMore) {
+                  e.currentTarget.style.backgroundColor = '#FFFFFF';
+                }
+              }}
+            >
+              {loadingMore ? 'Loading...' : 'Load More Reports'}
+            </button>
+          )}
+
           <button
             onClick={() => router.push('/')}
             className="px-6 py-3 rounded-lg font-medium transition-all"

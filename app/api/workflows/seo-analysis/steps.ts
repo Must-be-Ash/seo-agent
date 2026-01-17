@@ -6,6 +6,7 @@ import { registerExactEvmScheme } from '@x402/evm/exact/client';
 import { privateKeyToAccount } from 'viem/accounts';
 import OpenAI from 'openai';
 import type { StructuredReportData } from '@/types/report-data';
+import { safeParse } from '@/lib/safe-json';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -95,10 +96,13 @@ Return GENERIC category keywords (no brand names) as JSON:
     temperature: 0.3,
   });
 
-  const result = JSON.parse(response.choices[0].message.content || '{}');
+  const result = safeParse<{ primary: string; secondary: string[]; reasoning: string }>(
+    response.choices[0].message.content || '{}',
+    { primary: '', secondary: [], reasoning: '' }
+  );
 
   console.log(`[Step 2] ✓ Discovered primary keyword: "${result.primary}"`);
-  console.log(`[Step 2] ✓ Secondary keywords: ${result.secondary.join(', ')}`);
+  console.log(`[Step 2] ✓ Secondary keywords: ${result.secondary?.join(', ') || 'none'}`);
 
   return result;
 }
@@ -129,7 +133,7 @@ export async function searchCompetitors(
     }
     console.log(`[Step 3a] ✓ Found ${googleResults.length} Google results for "${keyword}"`);
   } catch (error) {
-    console.error('[Step 3a] Error searching Google:', error);
+    console.error('[Step 3a] Error searching Google:', error instanceof Error ? error.message : 'Unknown error');
   }
 
   // Step 3b: Ask LLM to identify competitors in this category AND filter Google results
@@ -189,7 +193,10 @@ FOCUS: Find competitors specifically for "${keyword}", NOT for the user's broade
     temperature: 0.3,
   });
 
-  const result = JSON.parse(response.choices[0].message.content || '{ "competitors": [] }');
+  const result = safeParse<{ competitors: any[] }>(
+    response.choices[0].message.content || '{ "competitors": [] }',
+    { competitors: [] }
+  );
 
   // Step 3c: Process and verify competitor URLs
   const verifiedCompetitors: Array<{ rank: number; title: string; url: string; description: string }> = [];
@@ -287,7 +294,7 @@ export async function detectGoogleRanking(
     return { rank: null, foundUrl: null };
 
   } catch (error) {
-    console.error('[Step 3b] Error detecting ranking:', error);
+    console.error('[Step 3b] Error detecting ranking:', error instanceof Error ? error.message : 'Unknown error');
     return { rank: null, foundUrl: null };
   }
 }
@@ -426,10 +433,13 @@ Return a JSON array of 5-10 common topics that appear in most pages:
     temperature: 0.3,
   });
 
-  const result = JSON.parse(response.choices[0].message.content || '{ "commonTopics": [] }');
+  const result = safeParse<{ commonTopics: string[] }>(
+    response.choices[0].message.content || '{ "commonTopics": [] }',
+    { commonTopics: [] }
+  );
 
   console.log(`[Step 5] ✓ Average metrics: ${avgWordCount} words, ${avgH2Count} H2s`);
-  console.log(`[Step 5] ✓ Common topics: ${result.commonTopics.join(', ')}`);
+  console.log(`[Step 5] ✓ Common topics: ${result.commonTopics?.join(', ') || 'none'}`);
 
   return {
     avgWordCount,
@@ -533,10 +543,13 @@ Return as JSON:
     temperature: 0.3,
   });
 
-  const result = JSON.parse(response.choices[0].message.content || '{ "gaps": [] }');
+  const result = safeParse<{ gaps: any[] }>(
+    response.choices[0].message.content || '{ "gaps": [] }',
+    { gaps: [] }
+  );
 
-  console.log(`[Step 6] ✓ Identified ${result.gaps.length} SEO gaps`);
-  return result.gaps;
+  console.log(`[Step 6] ✓ Identified ${result.gaps?.length || 0} SEO gaps`);
+  return result.gaps || [];
 }
 
 /**
